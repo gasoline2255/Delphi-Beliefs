@@ -45,12 +45,172 @@ async function fetchJson(url) {
 // ✅ CORRECT MAPPING with FULL model names
 function getCorrectEntryMap() {
   return {
-    "0": "claude-haiku-4-5",              // 12.2%
-    "1": "gemini-3-flash-preview",        // 12.6%
-    "2": "gpt-5-mini",                    // 12.1%
-    "3": "grok-4.1-fast-reasoning",       // 63.1% WINNER!
+    "0": "claude-haiku-4-5",
+    "1": "gemini-3-flash-preview",
+    "2": "gpt-5-mini",
+    "3": "grok-4.1-fast-reasoning",
   };
 }
+
+// ✅ KNOWN WINNERS from Gensyn website
+const SETTLED_MARKETS_WINNERS = {
+  0: 'Qwen/Qwen3-30B-A3B-Instruct-2507',
+  1: 'Qwen/Qwen3-30B-A3B-Instruct-2507',
+  3: 'Qwen/Qwen3-8B'
+};
+
+// ✅ SETTLED MARKETS ROUTE
+app.get("/settled-markets", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "settled-markets.html"));
+});
+
+// ✅ HISTORICAL ANALYSIS - FINAL WORKING VERSION
+app.get("/api/historical-analysis", async (req, res) => {
+  try {
+    const settledMarkets = [
+      { id: 0, name: 'Middleweight General Reasoning' },
+      { id: 1, name: 'Middleweight General Reasoning (II)' },
+      { id: 3, name: 'Lightweight General Reasoning' }
+    ];
+
+    const results = [];
+
+    for (const market of settledMarkets) {
+      try {
+        const marketId = market.id;
+        console.log(`\n🔄 Analyzing Market #${marketId}: ${market.name}`);
+        
+        // Fetch entry map
+        const entryMapUrl = `https://delphi.gensyn.ai/api/markets/${marketId}/entry-map`;
+        const entryMapResponse = await fetchJson(entryMapUrl);
+        const entryMapData = entryMapResponse.json || {};
+        const entryMap = entryMapData.map || entryMapData || {};
+        
+        const modelCount = Object.keys(entryMap).length || 4;
+        console.log(`   Models: ${modelCount}`);
+
+        // Fetch evals for all models
+        const evalPromises = [];
+        for (let idx = 0; idx < modelCount; idx++) {
+          const evalUrl = `https://delphi.gensyn.ai/api/markets/${marketId}/evals?modelIdx=${idx}`;
+          evalPromises.push(
+            fetchJson(evalUrl)
+              .then(r => ({ 
+                modelIdx: idx, 
+                data: r.json,
+                success: r.ok 
+              }))
+              .catch(err => ({ 
+                modelIdx: idx, 
+                data: null, 
+                success: false,
+                error: err.message 
+              }))
+          );
+        }
+
+        const allEvals = await Promise.all(evalPromises);
+
+        // Calculate average aggregate scores
+        const modelScores = {};
+        let evalCount = 0;
+
+        allEvals.forEach(({ modelIdx, data, success }) => {
+          const modelName = entryMap[String(modelIdx)] || `Model ${modelIdx}`;
+          
+          if (success && data && Array.isArray(data.evals)) {
+            const evals = data.evals;
+            evalCount = Math.max(evalCount, evals.length);
+            
+            // Calculate average of all aggregate scores
+            const aggregates = evals.map(e => e.aggregate || 0);
+            const avgAggregate = aggregates.reduce((sum, val) => sum + val, 0) / aggregates.length;
+            
+            modelScores[modelName] = avgAggregate;
+            console.log(`   ${modelName}: ${avgAggregate.toFixed(2)} avg (${evals.length} evals)`);
+          } else {
+            console.log(`   ${modelName}: No data available`);
+            modelScores[modelName] = 0;
+          }
+        });
+
+        // Calculate normalized beliefs
+        const totalScore = Object.values(modelScores).reduce((sum, s) => sum + s, 0);
+        const beliefs = {};
+        let topModel = null;
+        let topBelief = 0;
+
+        if (totalScore > 0) {
+          for (const [model, score] of Object.entries(modelScores)) {
+            const belief = (score / totalScore) * 100;
+            beliefs[model] = belief;
+            if (belief > topBelief) {
+              topBelief = belief;
+              topModel = model;
+            }
+          }
+        }
+
+        // Get known winner
+        const actualWinner = SETTLED_MARKETS_WINNERS[marketId];
+        
+        console.log(`   📊 Prediction: ${topModel} (${topBelief.toFixed(1)}%)`);
+        console.log(`   🎯 Actual: ${actualWinner}`);
+
+        // Check if prediction matches
+        const correct = topModel && actualWinner && (
+          topModel === actualWinner ||
+          topModel.toLowerCase().includes(actualWinner.toLowerCase()) ||
+          actualWinner.toLowerCase().includes(topModel.toLowerCase())
+        );
+
+        console.log(`   ${correct ? '✅ CORRECT' : '❌ INCORRECT'}`);
+
+        results.push({
+          marketId: marketId,
+          marketName: market.name,
+          actualWinner: actualWinner,
+          predictedWinner: topModel || 'No prediction',
+          beliefScore: topBelief,
+          correct: correct,
+          evalCount: evalCount,
+          allBeliefs: beliefs
+        });
+
+      } catch (error) {
+        console.error(`❌ Error processing market ${market.id}:`, error);
+        results.push({
+          marketId: market.id,
+          marketName: market.name,
+          error: error.message || 'Failed to fetch data'
+        });
+      }
+    }
+
+    // Calculate overall stats
+    const successfulResults = results.filter(r => !r.error);
+    const correctPredictions = successfulResults.filter(r => r.correct).length;
+    const winRate = successfulResults.length > 0 
+      ? (correctPredictions / successfulResults.length) * 100 
+      : 0;
+
+    console.log(`\n📊 FINAL RESULTS:`);
+    console.log(`   Total Markets: ${successfulResults.length}`);
+    console.log(`   Correct: ${correctPredictions}`);
+    console.log(`   Win Rate: ${winRate.toFixed(0)}%`);
+
+    res.json({
+      markets: results,
+      winRate: winRate,
+      totalMarkets: successfulResults.length,
+      correctPredictions: correctPredictions
+    });
+
+  } catch (error) {
+    console.error('❌ Historical analysis error:', error);
+    res.status(500).json({ error: 'Failed to fetch historical data' });
+  }
+});
 
 app.get("/api/entry-map", async (req, res) => {
   try {
@@ -76,7 +236,6 @@ app.get("/api/delphi-chart", async (req, res) => {
     const marketId = Number(req.query.market_id || MARKET_ID);
     const entryMap = getCorrectEntryMap();
 
-    // ✅ Use cache if less than 10 seconds old
     const now = Date.now();
     if (delphiChartCache && (now - delphiChartCacheTime) < CACHE_DURATION_MS) {
       console.log("✅ Returning cached Delphi chart");
@@ -121,7 +280,6 @@ app.get("/api/delphi-chart", async (req, res) => {
       entry_map_source: "correct_mapping",
     };
 
-    // ✅ Cache the response
     delphiChartCache = response;
     delphiChartCacheTime = now;
 
@@ -137,7 +295,6 @@ app.get("/api/human-belief", async (req, res) => {
   try {
     console.log("🔄 Fetching human belief data...");
     
-    // Fetch market info and all eval data in parallel
     const [marketsResponse, ...evalResponses] = await Promise.all([
       fetchJson("https://delphi.gensyn.ai/api/markets?limit=1&status=ongoing"),
       ...Array.from({ length: MODEL_COUNT }, (_, i) =>
@@ -176,10 +333,9 @@ app.get("/api/health", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Website: http://localhost:${PORT}`);
-  console.log(`✅ Correct mapping: Entry 3=grok-4.1-fast-reasoning (WINNER)`);
-  console.log(`✅ Health:  http://localhost:${PORT}/api/health`);
-  console.log(`✅ Map:     http://localhost:${PORT}/api/entry-map?market_id=${MARKET_ID}`);
-  console.log(`✅ Chart:   http://localhost:${PORT}/api/delphi-chart?timeframe=auto&market_id=${MARKET_ID}`);
-  console.log(`✅ Belief:  http://localhost:${PORT}/api/human-belief`);
+  console.log(`\n✅ Delphi Beliefs Dashboard Started`);
+  console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+  console.log(`📊 Main Dashboard:     http://localhost:${PORT}`);
+  console.log(`🔬 Settled Markets:    http://localhost:${PORT}/settled-markets`);
+  console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 });
