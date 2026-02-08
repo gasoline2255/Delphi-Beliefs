@@ -1161,17 +1161,26 @@ async function refresh(){
 // Initialize charts
 rebuildBeliefDatasets();
 
-// Load data immediately (no delay!)
-console.log("🚀 Loading data immediately...");
-refresh().then(() => {
-  console.log("✅ Initial data loaded!");
-});
-
-// Auto-refresh every 30 seconds
-setInterval(() => {
-  console.log("🔄 Auto-refreshing data...");
-  refresh();
-}, REFRESH_MS);
+// ✅ IMMEDIATE LOAD - Runs right away with proper async handling!
+(async function() {
+  console.log("🚀 Loading initial data NOW...");
+  try {
+    await refresh();
+    console.log("✅ Data loaded!");
+  } catch(e) {
+    console.error("❌ Load error:", e);
+  }
+  
+  // Start auto-refresh AFTER initial load completes
+  setInterval(async () => {
+    console.log("🔄 Auto-refresh...");
+    try {
+      await refresh();
+    } catch(e) {
+      console.error("❌ Refresh error:", e);
+    }
+  }, REFRESH_MS);
+})();
 </script>
 </body>
 </html>
