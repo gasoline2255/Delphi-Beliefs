@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Delphi Beliefs</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root{
+      --bg0:#0A0D1F;
+      --bg1:#0F1229;
+      --card: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.1);
+      --text:#E8EDF5;
+      --soft:#A0AAC0;
+      --muted:#6B7588;
+      --blue:#5B9FFF;
+      --orange:#FF9D5C;
+      --green:#00D89F;
+      --red:#FF5C7C;
+    }
+
+    *{ margin:0; padding:0; box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: Inter, -apple-system, sans-serif;
+      color: var(--text);
+      background: var(--bg0);
+      min-height: 100vh;
+    }
+
+    .wrap{ max-width: 1280px; margin: 0 auto; padding: 0; }
+
+    .navbar{
+      display:flex; justify-content:space-between; align-items:center;
+      padding: 1.25rem 2rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+    }
+    .nav-left{ display:flex; align-items:center; gap: 3rem; }
+    .brand{ display:flex; flex-direction: column; gap: 0.25rem; margin-left: 1rem; }
+    .brand-icon{
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--blue), var(--green));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.25rem;
+    }
+    .brand h1{ 
+      margin:0; 
+      font-size: 1.25rem; 
+      font-weight: 700; 
+      letter-spacing: -0.02em; 
+    }
+    .brand-subtitle{
+      font-size: 0.6875rem;
+      color: var(--green);
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .nav-tabs{
+      display: flex;
+      gap: 0.5rem;
+    }
+    .nav-tab{
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--soft);
+      text-decoration: none;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .nav-tab:hover{
+      color: var(--text);
+      background: rgba(255,255,255,0.05);
+    }
+    .nav-tab.active{
+      color: var(--text);
+      background: rgba(255,255,255,0.08);
+    }
+    .nav-tab svg{
+      width: 14px;
+      height: 14px;
+    }
+    .nav-links{
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+    }
+    .nav-link{
+      color: var(--soft);
+      text-decoration: none;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-link:hover{ color: var(--text); }
+    .nav-right{
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    .built-by{
+      color: var(--muted);
+      font-size: 0.875rem;
+    }
+    .built-by a{
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .built-by a:hover{ color: var(--blue); }
+    .social-links{
+      display: flex;
+      gap: 0.75rem;
+    }
+    .social-link{
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--soft);
+      text-decoration: none;
+      transition: all 0.2s;
+      background: rgba(255,255,255,0.03);
+    }
+    .social-link:hover{
+      border-color: var(--blue);
+      color: var(--blue);
+      background: rgba(91,159,255,0.1);
+    }
+    
+    .topbar{
+      display:flex; justify-content:space-between; align-items:flex-end;
+      margin-bottom: 1.5rem; gap: 1rem;
+    }
+    .brand p{
+      margin: 0.5rem 0 0; color: var(--soft); font-size: 0.875rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .statusPill{
+      display:flex; align-items:center; gap: 0.625rem;
+      padding: 0.625rem 1rem; border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--soft); font-size: 0.875rem; font-weight: 600;
+    }
+    .dot{
+      width:8px; height:8px; border-radius:50%;
+      background: var(--green);
+      box-shadow: 0 0 12px var(--green);
+    }
+
+    .stats{
+      display:grid; grid-template-columns: repeat(4, 1fr);
+      gap: 1rem; margin-bottom: 1.5rem;
+    }
+    @media (max-width: 980px){ .stats{ grid-template-columns: repeat(2, 1fr); } }
+
+    .card{
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--card);
+      overflow:hidden;
+    }
+    .cardInner{ padding: 1.25rem; }
+    .k{ color: var(--muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .v{ margin-top: 0.5rem; font-size: 1.125rem; font-weight: 700; }
+    .splitRow{
+      display:flex; justify-content:space-between;
+      margin-top: 0.625rem; font-size: 0.8125rem;
+    }
+    .subV{ color: var(--soft); }
+    .subRight{ color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+
+    .grid{
+      display:grid; grid-template-columns: 1.6fr 1fr; gap: 1.5rem;
+    }
+    @media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
+
+    .cardHeader{
+      display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      gap: 1rem;
+    }
+    .cardTitle{ font-weight: 700; font-size: 0.875rem; }
+
+    button{
+      font-family: Inter; font-size: 0.8125rem; font-weight: 700;
+      color: var(--text); background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 0.5rem 1rem; cursor:pointer; transition: all 0.2s;
+    }
+    button:hover{ background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.15); }
+
+    .btnPrimary{
+      background: linear-gradient(135deg, rgba(91,159,255,0.15), rgba(0,216,159,0.15));
+      border-color: rgba(91,159,255,0.3);
+    }
+
+    .body{ padding: 1.25rem; }
+
+    .chartShell{
+      border: 1px solid var(--border); border-radius: 12px;
+      background: rgba(255,255,255,0.02); padding: 0.875rem;
+    }
+    .chartShell canvas{ width:100% !important; height: 360px !important; display:block; }
+    #delphiChartCanvas{ height: 420px !important; }
+
+    .foot{
+      margin-top: 0.75rem; display:flex; justify-content:space-between;
+      color: var(--muted); font-size: 0.75rem;
+    }
+    .mono{ font-family: 'JetBrains Mono', monospace; }
+
+    .modelsList{ display:flex; flex-direction:column; gap:0.75rem; }
+    .modelRow{
+      display:flex; justify-content:space-between; align-items:center;
+      padding: 1rem; border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03); gap: 0.875rem;
+    }
+    .mLeft{ display:flex; align-items:center; gap: 0.75rem; min-width:0; }
+    .badge{
+      width:32px; height:32px; border-radius: 10px;
+      display:flex; align-items:center; justify-content:center;
+      font-weight: 800; font-size: 0.75rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .mName{ font-weight: 700; font-size: 0.9375rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mSub{ margin-top: 0.125rem; color: var(--muted); font-size: 0.8125rem; }
+    .mEval{ margin-top: 0.125rem; color: var(--soft); font-size: 0.75rem; font-family: 'JetBrains Mono', monospace; }
+    .pct{
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800; font-size: 0.875rem;
+      padding: 0.5rem 0.75rem; border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      min-width: 60px; text-align: center;
+    }
+
+    .hintPill{
+      display:flex; align-items:center; gap:0.625rem;
+      padding: 0.5rem 0.875rem; border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--card); color: var(--soft); font-size: 0.8125rem;
+    }
+
+    .chartHeaderRight{ display:flex; align-items:center; gap: 1rem; flex-wrap: wrap; }
+    .seg{
+      display:flex; background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 0.25rem; gap: 0.25rem;
+    }
+    .segBtn{
+      border: 0; background: transparent; color: var(--soft);
+      font-weight: 700; font-size: 0.8125rem;
+      padding: 0.5rem 0.875rem; border-radius: 8px;
+      cursor:pointer; transition: all 0.2s;
+    }
+    .segBtn.active{ background: rgba(255,255,255,0.1); color: var(--text); }
+
+    .topBelief{
+      display:flex; flex-direction:column; align-items:flex-end;
+      padding-left: 1rem; border-left: 1px solid var(--border);
+    }
+    .tbLabel{ font-size: 0.6875rem; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+    .tbValue{ margin-top: 0.125rem; font-family: 'JetBrains Mono'; font-size: 1rem; font-weight: 900; color: #FFB84D; }
+
+    .chipsWrap{ display:flex; flex-wrap: wrap; gap: 0.625rem; padding: 0.875rem 1.25rem 0; }
+    .chip{
+      display:inline-flex; align-items:center; gap: 0.5rem;
+      padding: 0.5rem 0.75rem; border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      color: var(--text); cursor: pointer;
+      font-size: 0.8125rem; font-weight: 600;
+    }
+    .chip:hover{ border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); }
+    .chip.off{ opacity: 0.5; }
+    .swatch{ width: 10px; height: 10px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.2); }
+
+    .fullRow{ margin-top: 1.5rem; }
+
+    .gapAnalysisList{
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .gapCard{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.25rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      gap: 1rem;
+    }
+    .gapLeft{
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      min-width: 0;
+      flex: 1;
+    }
+    .gapModelName{
+      font-weight: 700;
+      font-size: 0.9375rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .gapMetrics{
+      display: flex;
+      gap: 2rem;
+      align-items: center;
+    }
+    .gapMetricSmall{
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      align-items: flex-start;
+    }
+    .gapLabel{
+      font-size: 0.6875rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+    .gapValue{
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9375rem;
+      color: var(--text);
+    }
+    .gapRight{
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .gapDiffBadge{
+      padding: 0.5rem 0.875rem;
+      border-radius: 999px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      font-weight: 800;
+      min-width: 70px;
+      text-align: center;
+    }
+    .gapDiffBadge.overvalued{
+      background: rgba(255,92,124,0.15);
+      color: var(--red);
+      border: 1px solid rgba(255,92,124,0.3);
+    }
+    .gapDiffBadge.undervalued{
+      background: rgba(0,216,159,0.15);
+      color: var(--green);
+      border: 1px solid rgba(0,216,159,0.3);
+    }
+    .gapDiffBadge.neutral{
+      background: rgba(160,170,192,0.15);
+      color: var(--soft);
+      border: 1px solid rgba(160,170,192,0.3);
+    }
+    .gapSignalBadge{
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.8125rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      min-width: 65px;
+      text-align: center;
+    }
+    .gapSignalBadge.sell{
+      background: rgba(255,92,124,0.2);
+      color: var(--red);
+    }
+    .gapSignalBadge.buy{
+      background: rgba(0,216,159,0.2);
+      color: var(--green);
+    }
+    .gapSignalBadge.hold{
+      background: rgba(160,170,192,0.2);
+      color: var(--soft);
+    }
+
+    .gapPanel{
+      margin-bottom: 1.5rem;
+    }
+    .gapGrid{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .gapCard{
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      background: rgba(255,255,255,0.03);
+      position: relative;
+      overflow: hidden;
+    }
+    .gapCard::before{
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--model-color);
+    }
+    .gapHeader{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .gapModelName{
+      font-weight: 700;
+      font-size: 0.9375rem;
+      color: var(--text);
+    }
+    .gapSignal{
+      padding: 0.375rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .gapSignal.buy{
+      background: rgba(0,216,159,0.15);
+      color: var(--green);
+      border: 1px solid rgba(0,216,159,0.3);
+    }
+    .gapSignal.sell{
+      background: rgba(255,92,124,0.15);
+      color: var(--red);
+      border: 1px solid rgba(255,92,124,0.3);
+    }
+    .gapSignal.hold{
+      background: rgba(160,170,192,0.15);
+      color: var(--soft);
+      border: 1px solid rgba(160,170,192,0.3);
+    }
+    .gapMetrics{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .gapMetric{
+      background: rgba(255,255,255,0.02);
+      padding: 0.75rem;
+      border-radius: 8px;
+    }
+    .gapMetricLabel{
+      font-size: 0.6875rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.25rem;
+    }
+    .gapMetricValue{
+      font-size: 1.125rem;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text);
+    }
+    .gapDiff{
+      text-align: center;
+      padding: 0.875rem;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+    }
+    .gapDiffLabel{
+      font-size: 0.6875rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.375rem;
+    }
+    .gapDiffValue{
+      font-size: 1.5rem;
+      font-weight: 900;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .gapDiffValue.positive{
+      color: var(--red);
+    }
+    .gapDiffValue.negative{
+      color: var(--green);
+    }
+    .gapDiffValue.neutral{
+      color: var(--soft);
+    }
+
+    .miniMetaPill{
+      display:flex; align-items:center; gap:0.625rem;
+      padding: 0.5rem 0.875rem; border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--card); color: var(--muted);
+      font-size: 0.75rem; font-family: 'JetBrains Mono', monospace;
+    }
+    .miniDot{ width:6px; height:6px; border-radius:50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+    
+    @media (max-width: 768px){
+      .navbar{
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem;
+      }
+      .nav-left{
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        width: 100%;
+      }
+      .nav-tabs{
+        width: 100%;
+      }
+      .nav-tab{
+        flex: 1;
+        justify-content: center;
+      }
+      .nav-right{
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+      }
+      .brand{ margin-left: 0; }
+      .brand h1{ font-size: 1rem; }
+      .built-by{ font-size: 0.75rem; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="navbar">
+    <div class="nav-left">
+      <div class="brand">
+        <h1>Delphi Beliefs</h1>
+        <div class="brand-subtitle">Gensyn Testnet</div>
+      </div>
+      
+      <div class="nav-tabs">
+        <a href="#" class="nav-tab active">Delphi Beliefs</a>
+        <a href="https://delphi.gensyn.ai/" target="_blank" rel="noopener" class="nav-tab">
+          Delphi Markets
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+        </a>
+      </div>
+    </div>
+    
+    <div class="nav-right">
+      <div class="built-by">
+        Built by <a href="https://github.com/gasoline2255" target="_blank" rel="noopener">gasoline</a>
+      </div>
+      <div class="social-links">
+        <a href="https://github.com/gasoline2255" target="_blank" rel="noopener" class="social-link" title="GitHub">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+        </a>
+        <a href="https://x.com/gasoline2255" target="_blank" rel="noopener" class="social-link" title="X (Twitter)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div style="padding: 2rem;">
+    <div class="topbar">
+      <div class="statusPill">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">Live</span>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="card">
+        <div class="cardInner">
+          <div class="k">Market</div>
+          <div class="v" id="marketName">—</div>
+          <div class="splitRow">
+            <div class="subV" id="marketNumber">Market #—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardInner">
+          <div class="k">Status</div>
+          <div class="v" id="marketStatus">—</div>
+          <div class="splitRow">
+            <div class="subV">Auto refresh</div>
+            <div class="subRight" id="refreshInfo">30s</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardInner">
+          <div class="k">Last update</div>
+          <div class="v" id="lastUpdate">—</div>
+          <div class="splitRow">
+            <div class="subV">Points</div>
+            <div class="subRight" id="pointsCount">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardInner">
+          <div class="k">Models</div>
+          <div class="v" id="modelsCount">4</div>
+          <div class="splitRow">
+            <div class="subV">Shown</div>
+            <div class="subRight" id="modelsShown">4/4</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gap Analysis Panel -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+      <div class="cardHeader">
+        <div class="cardTitle">Gap Analysis (Belief vs Market)</div>
+        <div class="hintPill">
+          <span class="dot" style="width:6px;height:6px;"></span>
+          <span>Trading Opportunities</span>
+        </div>
+      </div>
+      <div class="body">
+        <div id="gapAnalysisList"></div>
+        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.8125rem; color: var(--soft); line-height: 1.6;">
+          Compares model performance (Belief) vs market sentiment (Market). Positive gaps = overvalued (SELL opportunity), negative gaps = undervalued (BUY opportunity).
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="cardHeader">
+          <div class="cardTitle">Belief splitter chart</div>
+          <div class="chartHeaderRight">
+            <div class="seg">
+              <button class="segBtn active" id="segAll">All models</button>
+              <button class="segBtn" id="segOne">Single model</button>
+            </div>
+            <div class="topBelief">
+              <div class="tbLabel">Top belief</div>
+              <div class="tbValue" id="topBeliefPct">—</div>
+            </div>
+            <button class="btnPrimary" id="btnExport">Export JSON</button>
+            <button id="btnClear">Clear</button>
+          </div>
+        </div>
+
+        <div class="chipsWrap" id="chipsWrap"></div>
+
+        <div class="body">
+          <div class="chartShell">
+            <canvas id="beliefChart"></canvas>
+          </div>
+          <div class="foot">
+            <div>Y-axis normalized belief (0 → 1)</div>
+          </div>
+          <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); font-size: 0.8125rem; color: var(--soft); line-height: 1.6;">
+            Shows real-time belief based on model evaluation scores. Updates when new test results come in.
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardHeader">
+          <div class="cardTitle">Models (latest belief)</div>
+          <div class="hintPill">
+            <span class="dot" style="width:6px;height:6px;"></span>
+            <span id="rightHint">Live</span>
+          </div>
+        </div>
+
+        <div class="body">
+          <div class="modelsList" id="modelsList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card fullRow">
+      <div class="cardHeader">
+        <div class="cardTitle">Delphi market chart (official)</div>
+      </div>
+
+      <div class="chipsWrap" id="delphiLegend"></div>
+
+      <div class="body">
+        <div class="chartShell">
+          <canvas id="delphiChartCanvas"></canvas>
+        </div>
+        <div class="foot">
+          <div>Entry prices over time</div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+
+<script>
+const REFRESH_MS = 30000;
+const MAX_POINTS = 200;
+const MARKET_ID = 4;
+
+let modelNames = [];
+let MODEL_COUNT = 4;
+let timestamps = [];
+let series = Array.from({ length: MODEL_COUNT }, () => []);
+let latestEvalScores = Array.from({ length: MODEL_COUNT }, () => []);
+let viewMode = "all";
+let activeSingleIndex = 0;
+let chipEnabled = Array.from({ length: MODEL_COUNT }, () => true);
+
+function canonicalKey(name){
+  const n = String(name || "").toLowerCase().trim();
+  if (n.includes("grok")) return "grok";
+  if (n.includes("gemini")) return "gemini";
+  if (n.includes("claude")) return "claude";
+  if (n.includes("gpt")) return "gpt";
+  return "other";
+}
+
+function colorForModelName(name){
+  const k = canonicalKey(name);
+  if (k === "grok") return "#5B9FFF";
+  if (k === "gemini") return "#FF9D5C";
+  if (k === "claude") return "#00D89F";
+  if (k === "gpt") return "#FF5C7C";
+  return "#A78BFA";
+}
+
+function nowLabel(){
+  return new Date().toLocaleTimeString([], { hour:"2-digit", minute:"2-digit", second:"2-digit" });
+}
+
+function normalize(scores){
+  const cleaned = scores.map(s => (typeof s === "number" && Number.isFinite(s) ? Math.max(s,0) : 0));
+  const sum = cleaned.reduce((a,b)=>a+b,0);
+  if (sum <= 0) return cleaned.map(()=> cleaned.length ? (1/cleaned.length) : 0);
+  return cleaned.map(v=>v/sum);
+}
+
+function extractScore(raw){
+  const arr = raw?.evals;
+  if (!Array.isArray(arr) || arr.length === 0) return null;
+  const latest = arr[arr.length - 1];
+  const candidates = ["avg_score","avgScore","average_score","score","value"];
+  for (const k of candidates){
+    const v = latest?.[k];
+    if (typeof v === "number" && Number.isFinite(v)) return v;
+  }
+  return null;
+}
+
+function escapeHtml(s){
+  return String(s ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+}
+
+Chart.defaults.color = '#6B7588';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.1)';
+Chart.defaults.font.family = "'Inter', sans-serif";
+
+const beliefChart = new Chart(document.getElementById("beliefChart"), {
+  type: "line",
+  data: { labels: timestamps, datasets: [] },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(15,18,41,0.95)',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        padding: 12
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        ticks: { color: '#6B7588', font: { size: 11 } }
+      },
+      y: {
+        min: 0,
+        max: 1,
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        ticks: { color: '#6B7588', font: { size: 11 } }
+      }
+    }
+  }
+});
+
+const marketChart = new Chart(document.getElementById("delphiChartCanvas"), {
+  type: "line",
+  data: { labels: [], datasets: [] },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        backgroundColor: 'rgba(15,18,41,0.95)',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        padding: 12
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        ticks: { color: '#6B7588', font: { size: 11 } }
+      },
+      y: {
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        ticks: { color: '#6B7588', font: { size: 11 } }
+      }
+    }
+  }
+});
+
+function rebuildBeliefDatasets(){
+  beliefChart.data.datasets = Array.from({ length: MODEL_COUNT }, (_, i) => ({
+    label: modelNames[i] || `Entry #${i}`,
+    data: series[i],
+    borderColor: colorForModelName(modelNames[i]),
+    borderWidth: 2,
+    pointRadius: 0,
+    tension: 0.4
+  }));
+  beliefChart.update();
+}
+
+function renderChips(){
+  document.getElementById("chipsWrap").innerHTML = modelNames.map((name, i) => {
+    const color = colorForModelName(name);
+    const isOn = viewMode === "one" ? (i === activeSingleIndex) : chipEnabled[i];
+    return `<div class="chip ${isOn?'':'off'}" data-idx="${i}">
+      <span class="swatch" style="background:${color};"></span>
+      <span>${escapeHtml(name)}</span>
+    </div>`;
+  }).join("");
+
+  document.querySelectorAll(".chip").forEach(el => {
+    el.addEventListener("click", () => {
+      const i = Number(el.getAttribute("data-idx"));
+      if (viewMode === "one"){
+        activeSingleIndex = i;
+      } else {
+        chipEnabled[i] = !chipEnabled[i];
+        if (chipEnabled.every(v => !v)) chipEnabled[i] = true;
+      }
+      applyViewMode();
+      renderChips();
+    });
+  });
+}
+
+function applyViewMode(){
+  document.getElementById("segAll").classList.toggle("active", viewMode === "all");
+  document.getElementById("segOne").classList.toggle("active", viewMode === "one");
+
+  if (viewMode === "one"){
+    beliefChart.data.datasets.forEach((ds, i) => ds.hidden = (i !== activeSingleIndex));
+  } else {
+    beliefChart.data.datasets.forEach((ds, i) => ds.hidden = !chipEnabled[i]);
+  }
+  beliefChart.update();
+
+  const shown = viewMode === "one" ? 1 : chipEnabled.filter(Boolean).length;
+  document.getElementById("modelsShown").textContent = `${shown}/${MODEL_COUNT}`;
+}
+
+document.getElementById("segAll").addEventListener("click", () => {
+  viewMode = "all";
+  chipEnabled = Array.from({length: MODEL_COUNT}, () => true);
+  applyViewMode();
+  renderChips();
+});
+
+document.getElementById("segOne").addEventListener("click", () => {
+  viewMode = "one";
+  activeSingleIndex = chipEnabled.findIndex(Boolean) >= 0 ? chipEnabled.findIndex(Boolean) : 0;
+  applyViewMode();
+  renderChips();
+});
+
+document.getElementById("btnClear").addEventListener("click", () => {
+  timestamps = [];
+  series.forEach(a => a.length = 0);
+  beliefChart.data.labels = timestamps;
+  beliefChart.update();
+  document.getElementById("pointsCount").textContent = "0";
+  document.getElementById("topBeliefPct").textContent = "—";
+});
+
+document.getElementById("btnExport").addEventListener("click", async () => {
+  try{
+    const res = await fetch("/api/human-belief");
+    const data = await res.json();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `belief-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }catch(e){
+    alert("Export failed");
+  }
+});
+
+function renderModels(probs){
+  const rows = modelNames.map((name, i) => ({
+    i, name,
+    p: probs?.[i] ?? 0,
+    eval: latestEvalScores?.[i] ?? null
+  })).sort((a,b)=>b.p - a.p);
+
+  document.getElementById("modelsList").innerHTML = rows.map((r, idx) => {
+    const pct = `${Math.round(r.p * 1000)/10}%`;
+    const color = colorForModelName(r.name);
+    const evalTxt = (typeof r.eval === "number" && Number.isFinite(r.eval)) ? r.eval.toFixed(2) : "—";
+
+    return `
+      <div class="modelRow">
+        <div class="mLeft">
+          <div class="badge" style="border-color:${color}33;background:${color}18;color:${color}">#${idx+1}</div>
+          <div style="min-width:0">
+            <div class="mName">${escapeHtml(r.name)}</div>
+            <div class="mSub">rank ${idx+1}</div>
+            <div class="mEval">Eval: ${evalTxt}</div>
+          </div>
+        </div>
+        <div class="pct">${pct}</div>
+      </div>
+    `;
+  }).join("");
+
+  const top = rows[0];
+  if (top){
+    document.getElementById("topBeliefPct").textContent = `${Math.round(top.p * 1000)/10}%`;
+  }
+}
+
+let latestMarketPrices = {};
+
+function renderGapAnalysis(beliefProbs){
+  const rows = modelNames.map((name, i) => {
+    const belief = beliefProbs?.[i] ?? 0;
+    const market = latestMarketPrices[name] ?? 0;
+    const gap = market - belief;
+    const gapPct = Math.round(gap * 1000) / 10;
+    
+    let signal = 'HOLD';
+    let gapClass = 'neutral';
+    if (Math.abs(gapPct) < 5) {
+      signal = 'HOLD';
+      gapClass = 'neutral';
+    } else if (gapPct > 0) {
+      signal = 'SELL';
+      gapClass = 'overvalued';
+    } else {
+      signal = 'BUY';
+      gapClass = 'undervalued';
+    }
+
+    const beliefPct = `${Math.round(belief * 1000) / 10}%`;
+    const marketPct = `${Math.round(market * 1000) / 10}%`;
+    const gapDisplay = gapPct > 0 ? `+${gapPct}%` : `${gapPct}%`;
+    
+    return {name, belief, market, gap: gapPct, signal, gapClass, beliefPct, marketPct, gapDisplay};
+  }).sort((a,b) => Math.abs(b.gap) - Math.abs(a.gap));
+
+  document.getElementById("gapAnalysisList").innerHTML = rows.map((r, idx) => {
+    const color = colorForModelName(r.name);
+    return `
+      <div class="gapCard">
+        <div class="gapLeft">
+          <div class="badge" style="border-color:${color}33;background:${color}18;color:${color}">#${idx+1}</div>
+          <div class="gapModelName">${escapeHtml(r.name)}</div>
+        </div>
+        
+        <div class="gapMetrics">
+          <div class="gapMetricSmall">
+            <div class="gapLabel">Belief</div>
+            <div class="gapValue">${r.beliefPct}</div>
+          </div>
+          <div class="gapMetricSmall">
+            <div class="gapLabel">Market</div>
+            <div class="gapValue">${r.marketPct}</div>
+          </div>
+        </div>
+        
+        <div class="gapRight">
+          <div class="gapDiffBadge ${r.gapClass}">${r.gapDisplay}</div>
+          <div class="gapSignalBadge ${r.signal.toLowerCase()}">${r.signal}</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderDelphiLegend(names){
+  document.getElementById("delphiLegend").innerHTML = (names || []).map((n) => {
+    const c = colorForModelName(n);
+    return `<div class="chip"><span class="swatch" style="background:${c};"></span><span>${escapeHtml(n)}</span></div>`;
+  }).join("");
+}
+
+async function refreshDelphiChart(){
+  try{
+    const res = await fetch(`/api/delphi-chart?timeframe=auto&market_id=${MARKET_ID}`);
+    const payload = await res.json();
+    const mc = payload?.market_chart;
+    const entryMap = payload?.entry_map || {};
+    const points = mc?.data_points;
+
+    if (!Array.isArray(points) || points.length === 0){
+      marketChart.data.labels = [];
+      marketChart.data.datasets = [];
+      marketChart.update();
+      renderDelphiLegend([]);
+      return;
+    }
+
+    const labels = points.map(p => {
+      const d = new Date(Number(p.timestamp) * 1000);
+      return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    });
+
+    const entryCount = Number(mc?.entry_count || 0);
+    const entryNames = Array.from({length: entryCount}, (_, i) => entryMap[String(i)] || `Entry #${i}`);
+
+    // Store latest market prices
+    const latestPoint = points[points.length - 1];
+    if (latestPoint && latestPoint.entries) {
+      latestPoint.entries.forEach(ent => {
+        const name = entryMap[String(ent.entry_idx)];
+        if (name) {
+          const price = ent?.price;
+          const v = (typeof price === "string") ? Number(price) : (typeof price === "number" ? price : NaN);
+          if (Number.isFinite(v)) {
+            latestMarketPrices[name] = v;
+          }
+        }
+      });
+    }
+
+    const datasets = Array.from({length: entryCount}, (_, entryIdx) => {
+      const label = entryNames[entryIdx];
+      const color = colorForModelName(label);
+      const data = points.map(p => {
+        const ent = (p.entries || []).find(e => String(e.entry_idx) === String(entryIdx));
+        const price = ent?.price;
+        const v = (typeof price === "string") ? Number(price) : (typeof price === "number" ? price : NaN);
+        return Number.isFinite(v) ? v : null;
+      });
+      return { label, data, borderColor: color, borderWidth: 2.5, pointRadius: 0, tension: 0.3 };
+    });
+
+    marketChart.data.labels = labels;
+    marketChart.data.datasets = datasets;
+    marketChart.update();
+    renderDelphiLegend(datasets.map(d => d.label));
+  }catch(e){
+    console.error("Delphi chart error:", e);
+  }
+}
+
+async function refresh(){
+  try{
+    const res = await fetch("/api/human-belief");
+    const data = await res.json();
+
+    if (Array.isArray(data.model_names) && data.model_names.length > 0) {
+      modelNames = data.model_names;
+      MODEL_COUNT = modelNames.length;
+      while (series.length < MODEL_COUNT) series.push([]);
+      while (latestEvalScores.length < MODEL_COUNT) latestEvalScores.push(null);
+    }
+
+    document.getElementById("marketName").textContent = data.market_name || "Delphi market";
+    document.getElementById("marketNumber").textContent = `Market #${data.market_id ?? "—"}`;
+    document.getElementById("marketStatus").textContent = data.status || "—";
+    document.getElementById("lastUpdate").textContent = nowLabel();
+    document.getElementById("modelsCount").textContent = String(MODEL_COUNT);
+
+    const raw = Array.isArray(data.raw) ? data.raw : [];
+    if (!raw.length) return;
+
+    const scores = raw.slice(0, MODEL_COUNT).map(extractScore);
+    latestEvalScores = scores.map(s => (typeof s === "number" && Number.isFinite(s)) ? s : null);
+
+    const any = scores.some(s => typeof s === "number");
+    if (any) {
+      const probs = normalize(scores.map(s => (typeof s === "number" ? s : 0)));
+      timestamps.push(nowLabel());
+      probs.forEach((p, i) => series[i].push(p));
+
+      if (timestamps.length > MAX_POINTS){
+        timestamps.shift();
+        series.forEach(a => a.shift());
+      }
+
+      beliefChart.data.labels = timestamps;
+      if (beliefChart.data.datasets.length === 0) rebuildBeliefDatasets();
+
+      beliefChart.data.datasets.forEach((ds, i) => {
+        ds.label = modelNames[i];
+        ds.borderColor = colorForModelName(modelNames[i]);
+      });
+
+      beliefChart.update();
+      document.getElementById("pointsCount").textContent = String(timestamps.length);
+      renderModels(probs);
+      renderChips();
+      applyViewMode();
+      renderGapAnalysis(probs);
+    }
+
+    await refreshDelphiChart();
+  }catch(e){
+    console.error(e);
+  }
+}
+
+rebuildBeliefDatasets();
+refresh();
+setInterval(refresh, REFRESH_MS);
+</script>
+</body>
+</html>
