@@ -7,6 +7,11 @@ const PORT = 3000;
 const MARKET_ID = 4;
 const MODEL_COUNT = 4;
 
+// ✅ CACHE to avoid waiting for API calls every time
+let delphiChartCache = null;
+let delphiChartCacheTime = 0;
+const CACHE_DURATION_MS = 10000; // 10 seconds
+
 app.use(express.static(path.join(__dirname, "public")));
 
 let fetchFn = global.fetch;
@@ -52,7 +57,7 @@ app.get("/api/entry-map", async (req, res) => {
     const marketId = Number(req.query.market_id || MARKET_ID);
     const map = getCorrectEntryMap();
 
-    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Cache-Control", "public, max-age=60");
     res.json({
       market_id: marketId,
       entry_count: MODEL_COUNT,
@@ -71,9 +76,18 @@ app.get("/api/delphi-chart", async (req, res) => {
     const marketId = Number(req.query.market_id || MARKET_ID);
     const entryMap = getCorrectEntryMap();
 
+    // ✅ Use cache if less than 10 seconds old
+    const now = Date.now();
+    if (delphiChartCache && (now - delphiChartCacheTime) < CACHE_DURATION_MS) {
+      console.log("✅ Returning cached Delphi chart");
+      return res.json(delphiChartCache);
+    }
+
     const url = `https://delphi.gensyn.ai/api/markets/${marketId}/chart?timeframe=${encodeURIComponent(timeframe)}`;
 
+    console.log("🔄 Fetching fresh Delphi chart from:", url);
     const r = await fetchJson(url);
+    
     if (!r.json) {
       return res.status(502).json({
         error: "bad_upstream_json",
@@ -97,8 +111,7 @@ app.get("/api/delphi-chart", async (req, res) => {
       });
     }
 
-    res.setHeader("Cache-Control", "no-store");
-    res.json({
+    const response = {
       market_id: marketId,
       timeframe,
       fetched_at: new Date().toISOString(),
@@ -106,42 +119,54 @@ app.get("/api/delphi-chart", async (req, res) => {
       market_chart,
       entry_map: entryMap,
       entry_map_source: "correct_mapping",
-    });
+    };
+
+    // ✅ Cache the response
+    delphiChartCache = response;
+    delphiChartCacheTime = now;
+
+    res.setHeader("Cache-Control", "public, max-age=10");
+    res.json(response);
   } catch (e) {
+    console.error("❌ Error fetching Delphi chart:", e);
     res.status(500).json({ error: String(e) });
   }
 });
 
 app.get("/api/human-belief", async (req, res) => {
   try {
-    const markets = await fetchJson(
-      "https://delphi.gensyn.ai/api/markets?limit=1&status=ongoing"
-    );
-    const market = markets?.json?.items?.[0] || null;
+    console.log("🔄 Fetching human belief data...");
+    
+    // Fetch market info and all eval data in parallel
+    const [marketsResponse, ...evalResponses] = await Promise.all([
+      fetchJson("https://delphi.gensyn.ai/api/markets?limit=1&status=ongoing"),
+      ...Array.from({ length: MODEL_COUNT }, (_, i) =>
+        fetchJson(`https://delphi.gensyn.ai/api/markets/${MARKET_ID}/evals?modelIdx=${i}`)
+      )
+    ]);
 
-    const evalUrls = Array.from({ length: MODEL_COUNT }, (_, i) =>
-      `https://delphi.gensyn.ai/api/markets/${MARKET_ID}/evals?modelIdx=${i}`
-    );
-    const rawResponses = await Promise.all(evalUrls.map(fetchJson));
-    const raw = rawResponses.map((r) => r.json);
+    const market = marketsResponse?.json?.items?.[0] || null;
+    const raw = evalResponses.map((r) => r.json);
 
     const entryMap = getCorrectEntryMap();
     const modelNames = Array.from({ length: MODEL_COUNT }, (_, i) => {
       return entryMap[String(i)] || `Entry #${i}`;
     });
 
-    res.setHeader("Cache-Control", "no-store");
+    console.log("✅ Human belief data fetched successfully");
+
+    res.setHeader("Cache-Control", "public, max-age=5");
     res.json({
       market_id: MARKET_ID,
-      market_name: market?.market_name || null,
-      status: market?.status || null,
+      market_name: market?.market_name || "AI Model Performance",
+      status: market?.status || "Active",
       fetched_at: new Date().toISOString(),
       model_names: modelNames,
       model_names_source: "correct_mapping",
       raw,
-      eval_sources: evalUrls,
     });
   } catch (e) {
+    console.error("❌ Error fetching human belief:", e);
     res.status(500).json({ error: String(e) });
   }
 });
