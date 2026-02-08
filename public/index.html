@@ -784,7 +784,7 @@ function extractScore(raw){
   const arr = raw?.evals;
   if (!Array.isArray(arr) || arr.length === 0) return null;
   const latest = arr[arr.length - 1];
-  const candidates = ["avg_score","avgScore","average_score","score","value"];
+  const candidates = ["avg_score","avgScore","average_score","score","value","aggregate"];
   for (const k of candidates){
     const v = latest?.[k];
     if (typeof v === "number" && Number.isFinite(v)) return v;
@@ -1052,7 +1052,6 @@ function renderDelphiLegend(names){
 // ✅ OPTIMIZED REFRESH FUNCTION - PARALLEL API CALLS
 async function refresh(){
   try{
-    // Fetch BOTH APIs at the same time (parallel)
     const [beliefRes, delphiRes] = await Promise.all([
       fetch("/api/human-belief"),
       fetch(`/api/delphi-chart?timeframe=auto&market_id=${MARKET_ID}`)
@@ -1061,7 +1060,6 @@ async function refresh(){
     const data = await beliefRes.json();
     const delphiPayload = await delphiRes.json();
 
-    // Process belief data
     if (Array.isArray(data.model_names) && data.model_names.length > 0) {
       modelNames = data.model_names;
       MODEL_COUNT = modelNames.length;
@@ -1108,7 +1106,6 @@ async function refresh(){
       }
     }
 
-    // Process Delphi data (already fetched in parallel!)
     const mc = delphiPayload?.market_chart;
     const entryMap = delphiPayload?.entry_map || {};
     const points = mc?.data_points;
@@ -1158,29 +1155,46 @@ async function refresh(){
   }
 }
 
+// ✅ PREVENT OVERLAPPING CALLS
+let isRefreshing = false;
+
+async function safeRefresh() {
+  if (isRefreshing) {
+    console.log("⏭️ Already refreshing, skipping...");
+    return;
+  }
+  
+  isRefreshing = true;
+  console.log("🔄 Starting refresh...");
+  try {
+    await refresh();
+    console.log("✅ Refresh complete!");
+  } catch(e) {
+    console.error("❌ Refresh failed:", e);
+  } finally {
+    isRefreshing = false;
+  }
+}
+
 // Initialize charts
 rebuildBeliefDatasets();
 
-// ✅ IMMEDIATE LOAD - Runs right away with proper async handling!
-(async function() {
-  console.log("🚀 Loading initial data NOW...");
-  try {
-    await refresh();
-    console.log("✅ Data loaded!");
-  } catch(e) {
-    console.error("❌ Load error:", e);
-  }
-  
-  // Start auto-refresh AFTER initial load completes
-  setInterval(async () => {
-    console.log("🔄 Auto-refresh...");
-    try {
-      await refresh();
-    } catch(e) {
-      console.error("❌ Refresh error:", e);
-    }
-  }, REFRESH_MS);
-})();
+// ADD THIS LINE HERE ⬇️
+console.log("REFRESH_MS value is:", REFRESH_MS, typeof REFRESH_MS);
+
+// ONE-TIME initial load
+console.log("🚀 Loading data NOW...");
+refresh().then(() => {
+  console.log("✅ Data loaded!");
+}).catch(e => {
+  console.error("❌ Load failed:", e);
+});
+
+// Auto-refresh every 30 seconds
+setInterval(() => {
+  console.log("🔄 Auto-refresh triggered");
+  refresh().catch(e => console.error("❌ Refresh failed:", e));
+}, REFRESH_MS);
 </script>
 </body>
 </html>
