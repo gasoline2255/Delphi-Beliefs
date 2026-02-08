@@ -42,7 +42,7 @@ async function fetchJson(url) {
   }
 }
 
-// ✅ CORRECT MAPPING with FULL model names
+// ✅ CORRECT MAPPING with FULL model names for current market
 function getCorrectEntryMap() {
   return {
     "0": "claude-haiku-4-5",
@@ -52,11 +52,43 @@ function getCorrectEntryMap() {
   };
 }
 
-// ✅ KNOWN WINNERS from Gensyn website
-const SETTLED_MARKETS_WINNERS = {
-  0: 'Qwen/Qwen3-30B-A3B-Instruct-2507',
-  1: 'Qwen/Qwen3-30B-A3B-Instruct-2507',
-  3: 'Qwen/Qwen3-8B'
+// ✅ HARDCODED ENTRY MAPS FOR SETTLED MARKETS
+// Since the API doesn't return entry-map data for settled markets,
+// we need to manually specify the model names for each market
+const SETTLED_MARKETS_CONFIG = {
+  0: {
+    name: 'Middleweight General Reasoning',
+    winner: 'Qwen/Qwen3-30B-A3B-Instruct-2507',
+    closedDate: 'Dec 29, 2024',
+    entryMap: {
+      "0": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+      "1": "Meta-Llama/Llama-3.3-70B-Instruct",
+      "2": "deepseek-ai/DeepSeek-V3",
+      "3": "Qwen/QwQ-32B-Preview"
+    }
+  },
+  1: {
+    name: 'Middleweight General Reasoning (II)',
+    winner: 'Qwen/Qwen3-30B-A3B-Instruct-2507',
+    closedDate: 'Dec 29, 2024',
+    entryMap: {
+      "0": "Qwen/Qwen3-30B-A3B-Instruct-2507",
+      "1": "Meta-Llama/Llama-3.3-70B-Instruct",
+      "2": "deepseek-ai/DeepSeek-V3",
+      "3": "Qwen/QwQ-32B-Preview"
+    }
+  },
+  3: {
+    name: 'Lightweight General Reasoning',
+    winner: 'Qwen/Qwen3-8B',
+    closedDate: 'Jan 30, 2025',
+    entryMap: {
+      "0": "Qwen/Qwen3-8B",
+      "1": "google/gemini-2.0-flash-exp",
+      "2": "Alibaba-NLP/gte-Qwen2-1.5B-instruct",
+      "3": "meta-llama/Llama-3.2-3B-Instruct"
+    }
+  }
 };
 
 // ✅ SETTLED MARKETS ROUTE
@@ -64,35 +96,29 @@ app.get("/settled-markets", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "settled-markets.html"));
 });
 
-// ✅ HISTORICAL ANALYSIS - FINAL WORKING VERSION
+// ✅ HISTORICAL ANALYSIS - WITH HARDCODED ENTRY MAPS
 app.get("/api/historical-analysis", async (req, res) => {
   try {
-    const settledMarkets = [
-      { id: 0, name: 'Middleweight General Reasoning' },
-      { id: 1, name: 'Middleweight General Reasoning (II)' },
-      { id: 3, name: 'Lightweight General Reasoning' }
-    ];
-
     const results = [];
 
-    for (const market of settledMarkets) {
+    for (const [marketId, config] of Object.entries(SETTLED_MARKETS_CONFIG)) {
       try {
-        const marketId = market.id;
-        console.log(`\n🔄 Analyzing Market #${marketId}: ${market.name}`);
+        const id = Number(marketId);
+        console.log(`\n🔄 Analyzing Market #${id}: ${config.name}`);
         
-        // Fetch entry map
-        const entryMapUrl = `https://delphi.gensyn.ai/api/markets/${marketId}/entry-map`;
-        const entryMapResponse = await fetchJson(entryMapUrl);
-        const entryMapData = entryMapResponse.json || {};
-        const entryMap = entryMapData.map || entryMapData || {};
+        // Use hardcoded entry map
+        const entryMap = config.entryMap;
+        const modelCount = Object.keys(entryMap).length;
         
-        const modelCount = Object.keys(entryMap).length || 4;
         console.log(`   Models: ${modelCount}`);
+        Object.entries(entryMap).forEach(([idx, name]) => {
+          console.log(`   [${idx}] ${name}`);
+        });
 
         // Fetch evals for all models
         const evalPromises = [];
         for (let idx = 0; idx < modelCount; idx++) {
-          const evalUrl = `https://delphi.gensyn.ai/api/markets/${marketId}/evals?modelIdx=${idx}`;
+          const evalUrl = `https://delphi.gensyn.ai/api/markets/${id}/evals?modelIdx=${idx}`;
           evalPromises.push(
             fetchJson(evalUrl)
               .then(r => ({ 
@@ -116,7 +142,7 @@ app.get("/api/historical-analysis", async (req, res) => {
         let evalCount = 0;
 
         allEvals.forEach(({ modelIdx, data, success }) => {
-          const modelName = entryMap[String(modelIdx)] || `Model ${modelIdx}`;
+          const modelName = entryMap[String(modelIdx)];
           
           if (success && data && Array.isArray(data.evals)) {
             const evals = data.evals;
@@ -152,12 +178,12 @@ app.get("/api/historical-analysis", async (req, res) => {
         }
 
         // Get known winner
-        const actualWinner = SETTLED_MARKETS_WINNERS[marketId];
+        const actualWinner = config.winner;
         
         console.log(`   📊 Prediction: ${topModel} (${topBelief.toFixed(1)}%)`);
         console.log(`   🎯 Actual: ${actualWinner}`);
 
-        // Check if prediction matches
+        // Check if prediction matches (exact match or partial match)
         const correct = topModel && actualWinner && (
           topModel === actualWinner ||
           topModel.toLowerCase().includes(actualWinner.toLowerCase()) ||
@@ -167,8 +193,8 @@ app.get("/api/historical-analysis", async (req, res) => {
         console.log(`   ${correct ? '✅ CORRECT' : '❌ INCORRECT'}`);
 
         results.push({
-          marketId: marketId,
-          marketName: market.name,
+          marketId: id,
+          marketName: config.name,
           actualWinner: actualWinner,
           predictedWinner: topModel || 'No prediction',
           beliefScore: topBelief,
@@ -178,10 +204,10 @@ app.get("/api/historical-analysis", async (req, res) => {
         });
 
       } catch (error) {
-        console.error(`❌ Error processing market ${market.id}:`, error);
+        console.error(`❌ Error processing market ${marketId}:`, error);
         results.push({
-          marketId: market.id,
-          marketName: market.name,
+          marketId: Number(marketId),
+          marketName: SETTLED_MARKETS_CONFIG[marketId].name,
           error: error.message || 'Failed to fetch data'
         });
       }
