@@ -1158,9 +1158,20 @@ async function refresh(){
   }
 }
 
+// Initialize charts
 rebuildBeliefDatasets();
-refresh();
-setInterval(refresh, REFRESH_MS);
+
+// Load data immediately (no delay!)
+console.log("🚀 Loading data immediately...");
+refresh().then(() => {
+  console.log("✅ Initial data loaded!");
+});
+
+// Auto-refresh every 30 seconds
+setInterval(() => {
+  console.log("🔄 Auto-refreshing data...");
+  refresh();
+}, REFRESH_MS);
 </script>
 </body>
 </html>
