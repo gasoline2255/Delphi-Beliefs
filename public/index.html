@@ -1049,71 +1049,19 @@ function renderDelphiLegend(names){
   }).join("");
 }
 
-async function refreshDelphiChart(){
-  try{
-    const res = await fetch(`/api/delphi-chart?timeframe=auto&market_id=${MARKET_ID}`);
-    const payload = await res.json();
-    const mc = payload?.market_chart;
-    const entryMap = payload?.entry_map || {};
-    const points = mc?.data_points;
-
-    if (!Array.isArray(points) || points.length === 0){
-      marketChart.data.labels = [];
-      marketChart.data.datasets = [];
-      marketChart.update();
-      renderDelphiLegend([]);
-      return;
-    }
-
-    const labels = points.map(p => {
-      const d = new Date(Number(p.timestamp) * 1000);
-      return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    });
-
-    const entryCount = Number(mc?.entry_count || 0);
-    const entryNames = Array.from({length: entryCount}, (_, i) => entryMap[String(i)] || `Entry #${i}`);
-
-    // Store latest market prices
-    const latestPoint = points[points.length - 1];
-    if (latestPoint && latestPoint.entries) {
-      latestPoint.entries.forEach(ent => {
-        const name = entryMap[String(ent.entry_idx)];
-        if (name) {
-          const price = ent?.price;
-          const v = (typeof price === "string") ? Number(price) : (typeof price === "number" ? price : NaN);
-          if (Number.isFinite(v)) {
-            latestMarketPrices[name] = v;
-          }
-        }
-      });
-    }
-
-    const datasets = Array.from({length: entryCount}, (_, entryIdx) => {
-      const label = entryNames[entryIdx];
-      const color = colorForModelName(label);
-      const data = points.map(p => {
-        const ent = (p.entries || []).find(e => String(e.entry_idx) === String(entryIdx));
-        const price = ent?.price;
-        const v = (typeof price === "string") ? Number(price) : (typeof price === "number" ? price : NaN);
-        return Number.isFinite(v) ? v : null;
-      });
-      return { label, data, borderColor: color, borderWidth: 2.5, pointRadius: 0, tension: 0.3 };
-    });
-
-    marketChart.data.labels = labels;
-    marketChart.data.datasets = datasets;
-    marketChart.update();
-    renderDelphiLegend(datasets.map(d => d.label));
-  }catch(e){
-    console.error("Delphi chart error:", e);
-  }
-}
-
+// ✅ OPTIMIZED REFRESH FUNCTION - PARALLEL API CALLS
 async function refresh(){
   try{
-    const res = await fetch("/api/human-belief");
-    const data = await res.json();
+    // Fetch BOTH APIs at the same time (parallel)
+    const [beliefRes, delphiRes] = await Promise.all([
+      fetch("/api/human-belief"),
+      fetch(`/api/delphi-chart?timeframe=auto&market_id=${MARKET_ID}`)
+    ]);
+    
+    const data = await beliefRes.json();
+    const delphiPayload = await delphiRes.json();
 
+    // Process belief data
     if (Array.isArray(data.model_names) && data.model_names.length > 0) {
       modelNames = data.model_names;
       MODEL_COUNT = modelNames.length;
@@ -1128,39 +1076,83 @@ async function refresh(){
     document.getElementById("modelsCount").textContent = String(MODEL_COUNT);
 
     const raw = Array.isArray(data.raw) ? data.raw : [];
-    if (!raw.length) return;
+    if (raw.length) {
+      const scores = raw.slice(0, MODEL_COUNT).map(extractScore);
+      latestEvalScores = scores.map(s => (typeof s === "number" && Number.isFinite(s)) ? s : null);
 
-    const scores = raw.slice(0, MODEL_COUNT).map(extractScore);
-    latestEvalScores = scores.map(s => (typeof s === "number" && Number.isFinite(s)) ? s : null);
+      const any = scores.some(s => typeof s === "number");
+      if (any) {
+        const probs = normalize(scores.map(s => (typeof s === "number" ? s : 0)));
+        timestamps.push(nowLabel());
+        probs.forEach((p, i) => series[i].push(p));
 
-    const any = scores.some(s => typeof s === "number");
-    if (any) {
-      const probs = normalize(scores.map(s => (typeof s === "number" ? s : 0)));
-      timestamps.push(nowLabel());
-      probs.forEach((p, i) => series[i].push(p));
+        if (timestamps.length > MAX_POINTS){
+          timestamps.shift();
+          series.forEach(a => a.shift());
+        }
 
-      if (timestamps.length > MAX_POINTS){
-        timestamps.shift();
-        series.forEach(a => a.shift());
+        beliefChart.data.labels = timestamps;
+        if (beliefChart.data.datasets.length === 0) rebuildBeliefDatasets();
+
+        beliefChart.data.datasets.forEach((ds, i) => {
+          ds.label = modelNames[i];
+          ds.borderColor = colorForModelName(modelNames[i]);
+        });
+
+        beliefChart.update();
+        document.getElementById("pointsCount").textContent = String(timestamps.length);
+        renderModels(probs);
+        renderChips();
+        applyViewMode();
+        renderGapAnalysis(probs);
       }
-
-      beliefChart.data.labels = timestamps;
-      if (beliefChart.data.datasets.length === 0) rebuildBeliefDatasets();
-
-      beliefChart.data.datasets.forEach((ds, i) => {
-        ds.label = modelNames[i];
-        ds.borderColor = colorForModelName(modelNames[i]);
-      });
-
-      beliefChart.update();
-      document.getElementById("pointsCount").textContent = String(timestamps.length);
-      renderModels(probs);
-      renderChips();
-      applyViewMode();
-      renderGapAnalysis(probs);
     }
 
-    await refreshDelphiChart();
+    // Process Delphi data (already fetched in parallel!)
+    const mc = delphiPayload?.market_chart;
+    const entryMap = delphiPayload?.entry_map || {};
+    const points = mc?.data_points;
+
+    if (Array.isArray(points) && points.length > 0) {
+      const labels = points.map(p => {
+        const d = new Date(Number(p.timestamp) * 1000);
+        return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      });
+
+      const entryCount = Number(mc?.entry_count || 0);
+      const entryNames = Array.from({length: entryCount}, (_, i) => entryMap[String(i)] || `Entry #${i}`);
+
+      const latestPoint = points[points.length - 1];
+      if (latestPoint && latestPoint.entries) {
+        latestPoint.entries.forEach(ent => {
+          const name = entryMap[String(ent.entry_idx)];
+          if (name) {
+            const price = ent?.price;
+            const v = (typeof price === "string") ? Number(price) : (typeof price === "number" ? price : NaN);
+            if (Number.isFinite(v)) {
+              latestMarketPrices[name] = v;
+            }
+          }
+        });
+      }
+
+      const datasets = Array.from({length: entryCount}, (_, entryIdx) => {
+        const label = entryNames[entryIdx];
+        const color = colorForModelName(label);
+        const data = points.map(p => {
+          const ent = (p.entries || []).find(e => String(e.entry_idx) === String(entryIdx));
+          const price = ent?.price;
+          const v = (typeof price === "string") ? Number(price) : (typeof price === "number" ? price : NaN);
+          return Number.isFinite(v) ? v : null;
+        });
+        return { label, data, borderColor: color, borderWidth: 2.5, pointRadius: 0, tension: 0.3 };
+      });
+
+      marketChart.data.labels = labels;
+      marketChart.data.datasets = datasets;
+      marketChart.update();
+      renderDelphiLegend(datasets.map(d => d.label));
+    }
   }catch(e){
     console.error(e);
   }
