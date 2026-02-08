@@ -789,11 +789,13 @@ function normalize(scores){
   return cleaned.map(v=>v/sum);
 }
 
+// ✅ FIXED: Check 'aggregate' field FIRST - it contains the normalized score that matches Gensyn
 function extractScore(raw){
   const arr = raw?.evals;
   if (!Array.isArray(arr) || arr.length === 0) return null;
   const latest = arr[arr.length - 1];
-  const candidates = ["avg_score","avgScore","average_score","score","value","aggregate"];
+  // Priority order: aggregate (normalized score) comes FIRST
+  const candidates = ["aggregate","avg_score","avgScore","average_score","score","value"];
   for (const k of candidates){
     const v = latest?.[k];
     if (typeof v === "number" && Number.isFinite(v)) return v;

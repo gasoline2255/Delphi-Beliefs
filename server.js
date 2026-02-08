@@ -7,10 +7,10 @@ const PORT = 3000;
 const MARKET_ID = 4;
 const MODEL_COUNT = 4;
 
-// ✅ CACHE to avoid waiting for API calls every time
+// ✅ REDUCED CACHE DURATION - Force more frequent updates
 let delphiChartCache = null;
 let delphiChartCacheTime = 0;
-const CACHE_DURATION_MS = 10000; // 10 seconds
+const CACHE_DURATION_MS = 5000; // 5 seconds only
 
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -26,6 +26,9 @@ async function fetchText(url) {
     headers: {
       accept: "application/json",
       "user-agent": "Mozilla/5.0",
+      // Force no-cache
+      "cache-control": "no-cache, no-store, must-revalidate",
+      "pragma": "no-cache"
     },
   });
   const text = await res.text();
@@ -53,8 +56,6 @@ function getCorrectEntryMap() {
 }
 
 // ✅ HARDCODED ENTRY MAPS FOR SETTLED MARKETS
-// Since the API doesn't return entry-map data for settled markets,
-// we need to manually specify the model names for each market
 const SETTLED_MARKETS_CONFIG = {
   0: {
     name: 'Middleweight General Reasoning',
@@ -106,16 +107,11 @@ app.get("/api/historical-analysis", async (req, res) => {
         const id = Number(marketId);
         console.log(`\n🔄 Analyzing Market #${id}: ${config.name}`);
         
-        // Use hardcoded entry map
         const entryMap = config.entryMap;
         const modelCount = Object.keys(entryMap).length;
         
         console.log(`   Models: ${modelCount}`);
-        Object.entries(entryMap).forEach(([idx, name]) => {
-          console.log(`   [${idx}] ${name}`);
-        });
 
-        // Fetch evals for all models
         const evalPromises = [];
         for (let idx = 0; idx < modelCount; idx++) {
           const evalUrl = `https://delphi.gensyn.ai/api/markets/${id}/evals?modelIdx=${idx}`;
@@ -137,7 +133,6 @@ app.get("/api/historical-analysis", async (req, res) => {
 
         const allEvals = await Promise.all(evalPromises);
 
-        // Calculate average aggregate scores
         const modelScores = {};
         let evalCount = 0;
 
@@ -148,7 +143,6 @@ app.get("/api/historical-analysis", async (req, res) => {
             const evals = data.evals;
             evalCount = Math.max(evalCount, evals.length);
             
-            // Calculate average of all aggregate scores
             const aggregates = evals.map(e => e.aggregate || 0);
             const avgAggregate = aggregates.reduce((sum, val) => sum + val, 0) / aggregates.length;
             
@@ -160,7 +154,6 @@ app.get("/api/historical-analysis", async (req, res) => {
           }
         });
 
-        // Calculate normalized beliefs
         const totalScore = Object.values(modelScores).reduce((sum, s) => sum + s, 0);
         const beliefs = {};
         let topModel = null;
@@ -177,13 +170,11 @@ app.get("/api/historical-analysis", async (req, res) => {
           }
         }
 
-        // Get known winner
         const actualWinner = config.winner;
         
         console.log(`   📊 Prediction: ${topModel} (${topBelief.toFixed(1)}%)`);
         console.log(`   🎯 Actual: ${actualWinner}`);
 
-        // Check if prediction matches (exact match or partial match)
         const correct = topModel && actualWinner && (
           topModel === actualWinner ||
           topModel.toLowerCase().includes(actualWinner.toLowerCase()) ||
@@ -213,7 +204,6 @@ app.get("/api/historical-analysis", async (req, res) => {
       }
     }
 
-    // Calculate overall stats
     const successfulResults = results.filter(r => !r.error);
     const correctPredictions = successfulResults.filter(r => r.correct).length;
     const winRate = successfulResults.length > 0 
@@ -243,7 +233,11 @@ app.get("/api/entry-map", async (req, res) => {
     const marketId = Number(req.query.market_id || MARKET_ID);
     const map = getCorrectEntryMap();
 
-    res.setHeader("Cache-Control", "public, max-age=60");
+    // NO CACHE - always fresh
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    
     res.json({
       market_id: marketId,
       entry_count: MODEL_COUNT,
@@ -309,7 +303,9 @@ app.get("/api/delphi-chart", async (req, res) => {
     delphiChartCache = response;
     delphiChartCacheTime = now;
 
-    res.setHeader("Cache-Control", "public, max-age=10");
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
     res.json(response);
   } catch (e) {
     console.error("❌ Error fetching Delphi chart:", e);
@@ -319,7 +315,8 @@ app.get("/api/delphi-chart", async (req, res) => {
 
 app.get("/api/human-belief", async (req, res) => {
   try {
-    console.log("🔄 Fetching human belief data...");
+    const timestamp = Date.now();
+    console.log(`🔄 [${timestamp}] Fetching FRESH human belief data...`);
     
     const [marketsResponse, ...evalResponses] = await Promise.all([
       fetchJson("https://delphi.gensyn.ai/api/markets?limit=1&status=ongoing"),
@@ -336,9 +333,18 @@ app.get("/api/human-belief", async (req, res) => {
       return entryMap[String(i)] || `Entry #${i}`;
     });
 
-    console.log("✅ Human belief data fetched successfully");
+    // Log eval counts
+    console.log(`✅ Human belief data fetched:`);
+    raw.forEach((evalData, idx) => {
+      const count = Array.isArray(evalData?.evals) ? evalData.evals.length : 0;
+      console.log(`   ${modelNames[idx]}: ${count} evals`);
+    });
 
-    res.setHeader("Cache-Control", "public, max-age=5");
+    // NO CACHE - always fresh
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    
     res.json({
       market_id: MARKET_ID,
       market_name: market?.market_name || "AI Model Performance",
@@ -363,5 +369,6 @@ app.listen(PORT, () => {
   console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
   console.log(`📊 Main Dashboard:     http://localhost:${PORT}`);
   console.log(`🔬 Settled Markets:    http://localhost:${PORT}/settled-markets`);
+  console.log(`⚡ Cache disabled - always fetches fresh data`);
   console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 });
