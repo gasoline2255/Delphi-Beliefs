@@ -657,9 +657,9 @@
     <div class="card" style="margin-bottom: 1.5rem;">
       <div class="cardHeader">
         <div class="cardTitle">Gap Analysis (Belief vs Market)</div>
-        <div class="hintPill">
-          <span class="dot" style="width:6px;height:6px;"></span>
-          <span>Trading Opportunities</span>
+        <div class="hintPill" id="gapStatusPill">
+          <span class="dot" style="width:6px;height:6px;background:#FFB84D;box-shadow:0 0 8px #FFB84D;" id="gapStatusDot"></span>
+          <span id="gapStatusText">Loading...</span>
         </div>
       </div>
       <div class="body">
@@ -696,6 +696,10 @@
           </div>
           <div class="foot">
             <div>Y-axis normalized belief (0 → 1)</div>
+            <div class="miniMetaPill" id="beliefStatusPill">
+              <span class="miniDot" id="beliefStatusDot" style="background:#FFB84D;box-shadow:0 0 8px #FFB84D;"></span>
+              <span id="beliefStatusText">Loading...</span>
+            </div>
           </div>
           <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); font-size: 0.8125rem; color: var(--soft); line-height: 1.6;">
             Shows real-time belief based on model evaluation scores. Updates when new test results come in.
@@ -721,6 +725,10 @@
     <div class="card fullRow">
       <div class="cardHeader">
         <div class="cardTitle">Delphi market chart (official)</div>
+        <div class="hintPill" id="delphiChartStatusPill">
+          <span class="dot" style="width:6px;height:6px;background:#FFB84D;box-shadow:0 0 8px #FFB84D;" id="delphiChartStatusDot"></span>
+          <span id="delphiChartStatusText">Loading...</span>
+        </div>
       </div>
 
       <div class="chipsWrap" id="delphiLegend"></div>
@@ -1040,6 +1048,21 @@ function renderGapAnalysis(beliefProbs){
       </div>
     `;
   }).join("");
+  
+  // ✅ Update status indicator
+  const hasMarketData = Object.keys(latestMarketPrices).length > 0;
+  const statusDot = document.getElementById("gapStatusDot");
+  const statusText = document.getElementById("gapStatusText");
+  
+  if (hasMarketData) {
+    statusDot.style.background = "var(--green)";
+    statusDot.style.boxShadow = "0 0 8px var(--green)";
+    statusText.textContent = "Trading Opportunities";
+  } else {
+    statusDot.style.background = "#FFB84D";
+    statusDot.style.boxShadow = "0 0 8px #FFB84D";
+    statusText.textContent = "Loading...";
+  }
 }
 
 function renderDelphiLegend(names){
@@ -1103,6 +1126,18 @@ async function refresh(){
         renderChips();
         applyViewMode();
         renderGapAnalysis(probs);
+        
+        // ✅ Update belief chart status - synced with gap analysis
+        // Both turn green only when gap analysis has market data
+        const hasMarketData = Object.keys(latestMarketPrices).length > 0;
+        const beliefStatusDot = document.getElementById("beliefStatusDot");
+        const beliefStatusText = document.getElementById("beliefStatusText");
+        
+        if (hasMarketData) {
+          beliefStatusDot.style.background = "var(--green)";
+          beliefStatusDot.style.boxShadow = "0 0 8px var(--green)";
+          beliefStatusText.textContent = "Live";
+        }
       }
     }
 
@@ -1149,6 +1184,13 @@ async function refresh(){
       marketChart.data.datasets = datasets;
       marketChart.update();
       renderDelphiLegend(datasets.map(d => d.label));
+      
+      // ✅ Update Delphi chart status indicator
+      const delphiStatusDot = document.getElementById("delphiChartStatusDot");
+      const delphiStatusText = document.getElementById("delphiChartStatusText");
+      delphiStatusDot.style.background = "var(--green)";
+      delphiStatusDot.style.boxShadow = "0 0 8px var(--green)";
+      delphiStatusText.textContent = "Live";
     }
   }catch(e){
     console.error(e);
@@ -1179,22 +1221,16 @@ async function safeRefresh() {
 // Initialize charts
 rebuildBeliefDatasets();
 
-// ADD THIS LINE HERE ⬇️
-console.log("REFRESH_MS value is:", REFRESH_MS, typeof REFRESH_MS);
+// ✅ Set initial belief chart status to Loading
+document.getElementById("beliefStatusDot").style.background = "#FFB84D";
+document.getElementById("beliefStatusDot").style.boxShadow = "0 0 8px #FFB84D";
+document.getElementById("beliefStatusText").textContent = "Loading...";
 
-// ONE-TIME initial load
-console.log("🚀 Loading data NOW...");
-refresh().then(() => {
-  console.log("✅ Data loaded!");
-}).catch(e => {
-  console.error("❌ Load failed:", e);
-});
+// Load data immediately
+safeRefresh();
 
 // Auto-refresh every 30 seconds
-setInterval(() => {
-  console.log("🔄 Auto-refresh triggered");
-  refresh().catch(e => console.error("❌ Refresh failed:", e));
-}, REFRESH_MS);
+setInterval(safeRefresh, REFRESH_MS);
 </script>
 </body>
 </html>
