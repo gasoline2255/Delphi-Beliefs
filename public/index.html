@@ -1095,7 +1095,7 @@ function renderGapAnalysis(beliefProbs){
     const gapDisplay = gapPct > 0 ? `+${gapPct}%` : `${gapPct}%`;
     
     return {name, belief, market, gap: gapPct, signal, gapClass, beliefPct, marketPct, gapDisplay};
-  }).sort((a,b) => Math.abs(b.gap) - Math.abs(a.gap));
+  }).sort((a,b) => b.belief - a.belief); // Sort by belief % (highest first)
 
   document.getElementById("gapAnalysisList").innerHTML = rows.map((r, idx) => {
     const color = colorForModelName(r.name);
@@ -1134,7 +1134,7 @@ function renderGapAnalysis(beliefProbs){
   if (hasMarketData) {
     statusDot.style.background = "var(--green)";
     statusDot.style.boxShadow = "0 0 8px var(--green)";
-    statusText.textContent = "Price Analysis";
+    statusText.textContent = "Live";
   } else {
     statusDot.style.background = "#FFB84D";
     statusDot.style.boxShadow = "0 0 8px #FFB84D";
