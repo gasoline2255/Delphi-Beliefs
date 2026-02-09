@@ -12,6 +12,12 @@ let delphiChartCache = null;
 let delphiChartCacheTime = 0;
 const CACHE_DURATION_MS = 5000; // 5 seconds only
 
+// ✅ ADD: small cache + timeout only for /api/human-belief (fixes 15s+ load)
+let humanBeliefCache = null;
+let humanBeliefCacheTime = 0;
+const HUMAN_BELIEF_CACHE_MS = 8000; // serve cached for 8s to avoid slow upstream spikes
+const HUMAN_BELIEF_TIMEOUT_MS = 9000; // abort upstream if hanging/pending
+
 app.use(express.static(path.join(__dirname, "public")));
 
 let fetchFn = global.fetch;
@@ -42,6 +48,36 @@ async function fetchJson(url) {
     return { ok, status, json, text };
   } catch {
     return { ok: false, status, json: null, text };
+  }
+}
+
+// ✅ ADD: timeout fetchJson (used ONLY by /api/human-belief)
+async function fetchJsonWithTimeout(url, timeoutMs = HUMAN_BELIEF_TIMEOUT_MS) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(url, {
+      signal: ctrl.signal,
+      headers: {
+        accept: "application/json",
+        "user-agent": "Mozilla/5.0",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        "pragma": "no-cache",
+      },
+    });
+
+    const text = await res.text();
+    try {
+      const json = JSON.parse(text);
+      return { ok: res.ok, status: res.status, json, text };
+    } catch {
+      return { ok: false, status: res.status, json: null, text };
+    }
+  } catch (e) {
+    return { ok: false, status: 0, json: null, text: String(e) };
+  } finally {
+    clearTimeout(t);
   }
 }
 
@@ -329,17 +365,36 @@ app.get("/api/delphi-chart", async (req, res) => {
 
 app.get("/api/human-belief", async (req, res) => {
   try {
+    const now = Date.now();
+
+    // ✅ Serve cached response briefly to avoid slow upstream spikes + parallel piling
+    if (humanBeliefCache && (now - humanBeliefCacheTime) < HUMAN_BELIEF_CACHE_MS) {
+      return res.json(humanBeliefCache);
+    }
+
     const timestamp = Date.now();
     console.log(`🔄 [${timestamp}] Fetching FRESH human belief data...`);
-    
-    const [marketsResponse, ...evalResponses] = await Promise.all([
-      fetchJson("https://delphi.gensyn.ai/api/markets?limit=1&status=ongoing"),
+
+    // ✅ Fetch with per-request timeout + don't let 1 slow model block everything
+    const tasks = [
+      fetchJsonWithTimeout("https://delphi.gensyn.ai/api/markets?limit=1&status=ongoing"),
       ...Array.from({ length: MODEL_COUNT }, (_, i) =>
-        fetchJson(`https://delphi.gensyn.ai/api/markets/${MARKET_ID}/evals?modelIdx=${i}`)
+        fetchJsonWithTimeout(`https://delphi.gensyn.ai/api/markets/${MARKET_ID}/evals?modelIdx=${i}`)
       )
-    ]);
+    ];
+
+    const settled = await Promise.allSettled(tasks);
+
+    const marketsResponse =
+      settled[0].status === "fulfilled" ? settled[0].value : { ok: false, json: null };
+
+    const evalResponses = settled.slice(1).map((s) =>
+      s.status === "fulfilled" ? s.value : { ok: false, json: null }
+    );
 
     const market = marketsResponse?.json?.items?.[0] || null;
+
+    // Keep shape stable: raw array always MODEL_COUNT length
     const raw = evalResponses.map((r) => r.json);
 
     const entryMap = getCorrectEntryMap();
@@ -348,18 +403,13 @@ app.get("/api/human-belief", async (req, res) => {
     });
 
     // Log eval counts
-    console.log(`✅ Human belief data fetched:`);
+    console.log(`✅ Human belief data fetched (with timeout protection):`);
     raw.forEach((evalData, idx) => {
       const count = Array.isArray(evalData?.evals) ? evalData.evals.length : 0;
       console.log(`   ${modelNames[idx]}: ${count} evals`);
     });
 
-    // NO CACHE - always fresh
-    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-    res.setHeader("Pragma", "no-cache");
-    res.setHeader("Expires", "0");
-    
-    res.json({
+    const payload = {
       market_id: MARKET_ID,
       market_name: market?.market_name || "AI Model Performance",
       status: market?.status || "Active",
@@ -367,7 +417,18 @@ app.get("/api/human-belief", async (req, res) => {
       model_names: modelNames,
       model_names_source: "correct_mapping",
       raw,
-    });
+    };
+
+    // ✅ Update cache
+    humanBeliefCache = payload;
+    humanBeliefCacheTime = now;
+
+    // Keep your no-cache headers (unchanged behavior), but response is now fast due to in-memory cache + timeout
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+
+    res.json(payload);
   } catch (e) {
     console.error("❌ Error fetching human belief:", e);
     res.status(500).json({ error: String(e) });
