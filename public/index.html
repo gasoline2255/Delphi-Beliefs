@@ -440,6 +440,19 @@
       background: rgba(160,170,192,0.2);
       color: var(--soft);
     }
+    .gapSignalBadge.loading{
+      background: rgba(255,184,77,0.2);
+      color: #FFB84D;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
 
     .gapPanel{
       margin-bottom: 1.5rem;
@@ -839,9 +852,11 @@ const MARKET_ID = 4;
 let modelNames = [];
 let MODEL_COUNT = 4;
 let timestamps = [];
-let series = Array.from({ length: MODEL_COUNT }, () => []);
+let series = Array.from({ length: MODEL_COUNT }, () => []); // normalized belief %
+let rawScoreSeries = Array.from({ length: MODEL_COUNT }, () => []); // raw eval scores
 let latestEvalScores = Array.from({ length: MODEL_COUNT }, () => []);
 let allEvalHistory = Array.from({ length: MODEL_COUNT }, () => []);
+let lastProcessedEvalCounts = Array.from({ length: MODEL_COUNT }, () => 0); // Track eval count per model
 let viewMode = "all";
 let activeSingleIndex = 0;
 let chipEnabled = Array.from({ length: MODEL_COUNT }, () => true);
@@ -920,7 +935,13 @@ const beliefChart = new Chart(document.getElementById("beliefChart"), {
         min: 0,
         max: 1,
         grid: { color: 'rgba(255,255,255,0.05)' },
-        ticks: { color: '#6B7588', font: { size: 11 } }
+        ticks: { 
+          color: '#6B7588', 
+          font: { size: 11 },
+          callback: function(value) {
+            return (value * 100).toFixed(0) + '%';
+          }
+        }
       }
     }
   }
@@ -956,13 +977,40 @@ const marketChart = new Chart(document.getElementById("delphiChartCanvas"), {
   }
 });
 
+function updateBeliefChartScale() {
+  if (series.length === 0 || series[0].length === 0) return;
+  
+  const allValues = series.flat().filter(v => typeof v === 'number');
+  if (allValues.length === 0) return;
+  
+  const min = Math.min(...allValues);
+  const max = Math.max(...allValues);
+  const range = max - min;
+  
+  // Always zoom in to show the actual data range with padding
+  // This makes small changes (like 28.5% -> 28.8%) look dramatic
+  const padding = Math.max(range * 0.2, 0.02); // At least 2% padding
+  
+  beliefChart.options.scales.y.min = Math.max(0, min - padding);
+  beliefChart.options.scales.y.max = Math.min(1, max + padding);
+  
+  beliefChart.update('none');
+}
+
 function rebuildBeliefDatasets(){
   beliefChart.data.datasets = Array.from({ length: MODEL_COUNT }, (_, i) => ({
     label: modelNames[i] || `Entry #${i}`,
     data: series[i],
     borderColor: colorForModelName(modelNames[i]),
-    borderWidth: 2,
-    pointRadius: 0,
+    borderWidth: 2.5,
+    pointRadius: (context) => {
+      const label = context.chart.data.labels[context.dataIndex];
+      return label && label.startsWith('Eval') ? 4 : 0; // Only show dots on Eval points
+    },
+    pointHoverRadius: 6,
+    pointBackgroundColor: colorForModelName(modelNames[i]),
+    pointBorderColor: '#0A0D1F',
+    pointBorderWidth: 2,
     tension: 0.4
   }));
   beliefChart.update();
@@ -1071,6 +1119,8 @@ function renderModels(probs){
 let latestMarketPrices = {};
 
 function renderGapAnalysis(beliefProbs){
+  const hasMarketData = Object.keys(latestMarketPrices).length > 0;
+  
   const rows = modelNames.map((name, i) => {
     const belief = beliefProbs?.[i] ?? 0;
     const market = latestMarketPrices[name] ?? 0;
@@ -1079,27 +1129,42 @@ function renderGapAnalysis(beliefProbs){
     
     let signal = 'ALIGNED';
     let gapClass = 'neutral';
-    if (Math.abs(gapPct) < 5) {
-      signal = 'ALIGNED';
-      gapClass = 'neutral';
-    } else if (gapPct > 0) {
-      signal = 'OVERPRICED';
-      gapClass = 'overvalued';
+    
+    if (hasMarketData) {
+      if (Math.abs(gapPct) < 5) {
+        signal = 'ALIGNED';
+        gapClass = 'neutral';
+      } else if (gapPct > 0) {
+        signal = 'OVERPRICED';
+        gapClass = 'overvalued';
+      } else {
+        signal = 'UNDERPRICED';
+        gapClass = 'undervalued';
+      }
     } else {
-      signal = 'UNDERPRICED';
-      gapClass = 'undervalued';
+      signal = 'LOADING';
+      gapClass = 'neutral';
     }
 
     const beliefPct = `${Math.round(belief * 1000) / 10}%`;
-    const marketPct = `${Math.round(market * 1000) / 10}%`;
-    const gapDisplay = gapPct > 0 ? `+${gapPct}%` : `${gapPct}%`;
+    const marketPct = hasMarketData ? `${Math.round(market * 1000) / 10}%` : '—';
+    const gapDisplay = hasMarketData ? (gapPct > 0 ? `+${gapPct}%` : `${gapPct}%`) : '—';
     
-    return {name, belief, market, gap: gapPct, signal, gapClass, beliefPct, marketPct, gapDisplay};
-  }).sort((a,b) => b.belief - a.belief); // Sort by belief % (highest first)
+    return {name, belief, market, gap: gapPct, signal, gapClass, beliefPct, marketPct, gapDisplay, hasMarketData};
+  }).sort((a,b) => b.belief - a.belief);
 
   document.getElementById("gapAnalysisList").innerHTML = rows.map((r, idx) => {
     const color = colorForModelName(r.name);
     const displayName = r.name.charAt(0).toUpperCase() + r.name.slice(1);
+    
+    const signalBadgeContent = r.hasMarketData 
+      ? `<div class="gapSignalBadge ${r.signal.toLowerCase()}">${r.signal}</div>`
+      : `<div class="gapSignalBadge loading">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+          </svg>
+          LOADING
+        </div>`;
     
     return `
       <div class="gapCard">
@@ -1121,13 +1186,12 @@ function renderGapAnalysis(beliefProbs){
         
         <div class="gapRight">
           <div class="gapDiffBadge ${r.gapClass}">${r.gapDisplay}</div>
-          <div class="gapSignalBadge ${r.signal.toLowerCase()}">${r.signal}</div>
+          ${signalBadgeContent}
         </div>
       </div>
     `;
   }).join("");
   
-  const hasMarketData = Object.keys(latestMarketPrices).length > 0;
   const statusDot = document.getElementById("gapStatusDot");
   const statusText = document.getElementById("gapStatusText");
   
@@ -1192,16 +1256,109 @@ async function refresh(){
         }).filter(v => v !== null);
       });
 
+      // On first load, build complete history
+      const currentEvalCounts = allEvalHistory.map(h => h.length);
+      const maxEvals = Math.max(...currentEvalCounts);
+      
+      // If this is first load (timestamps empty), build all historical points
+      if (timestamps.length === 0 && maxEvals > 0) {
+        for (let evalNum = 1; evalNum <= maxEvals; evalNum++) {
+          // Get scores for this eval number
+          const evalScores = raw.slice(0, MODEL_COUNT).map(modelData => {
+            const evals = modelData?.evals;
+            if (!Array.isArray(evals) || evalNum > evals.length) return null;
+            const evalItem = evals[evalNum - 1];
+            const candidates = ["aggregate","avg_score","avgScore","average_score","score","value"];
+            for (const k of candidates){
+              const v = evalItem?.[k];
+              if (typeof v === "number" && Number.isFinite(v)) return v;
+            }
+            return null;
+          });
+          
+          const hasScores = evalScores.some(s => typeof s === "number");
+          if (hasScores) {
+            const probs = normalize(evalScores.map(s => (typeof s === "number" ? s : 0)));
+            
+            // Add the main eval point
+            timestamps.push(`Eval #${evalNum}`);
+            probs.forEach((p, i) => series[i].push(p));
+            
+            // If not the last eval, add 2 intermediate points for smooth curve
+            if (evalNum < maxEvals) {
+              const nextEvalScores = raw.slice(0, MODEL_COUNT).map(modelData => {
+                const evals = modelData?.evals;
+                if (!Array.isArray(evals) || evalNum + 1 > evals.length) return null;
+                const evalItem = evals[evalNum];
+                const candidates = ["aggregate","avg_score","avgScore","average_score","score","value"];
+                for (const k of candidates){
+                  const v = evalItem?.[k];
+                  if (typeof v === "number" && Number.isFinite(v)) return v;
+                }
+                return null;
+              });
+              
+              const hasNextScores = nextEvalScores.some(s => typeof s === "number");
+              if (hasNextScores) {
+                const nextProbs = normalize(nextEvalScores.map(s => (typeof s === "number" ? s : 0)));
+                
+                // Add intermediate points for smooth transition
+                timestamps.push('');
+                probs.forEach((p, i) => {
+                  const diff = nextProbs[i] - p;
+                  series[i].push(p + diff * 0.3); // 30% of the way
+                });
+                
+                timestamps.push('');
+                probs.forEach((p, i) => {
+                  const diff = nextProbs[i] - p;
+                  series[i].push(p + diff * 0.7); // 70% of the way
+                });
+              }
+            }
+          }
+        }
+        lastProcessedEvalCounts = [...currentEvalCounts];
+      } else {
+        // Check if any model has a new eval since last check
+        const hasNewEval = currentEvalCounts.some((count, i) => count > lastProcessedEvalCounts[i]);
+        
+        if (hasNewEval) {
+          const scores = raw.slice(0, MODEL_COUNT).map(extractScore);
+          const probs = normalize(scores.map(s => (typeof s === "number" ? s : 0)));
+          const maxEvalCount = Math.max(...currentEvalCounts);
+          
+          // Add intermediate transition points before new eval
+          if (timestamps.length > 0 && series[0].length > 0) {
+            const prevProbs = series.map(s => s[s.length - 1]);
+            
+            timestamps.push('');
+            probs.forEach((p, i) => {
+              const diff = p - prevProbs[i];
+              series[i].push(prevProbs[i] + diff * 0.3);
+            });
+            
+            timestamps.push('');
+            probs.forEach((p, i) => {
+              const diff = p - prevProbs[i];
+              series[i].push(prevProbs[i] + diff * 0.7);
+            });
+          }
+          
+          timestamps.push(`Eval #${maxEvalCount}`);
+          probs.forEach((p, i) => series[i].push(p));
+          lastProcessedEvalCounts = [...currentEvalCounts];
+
+          if (timestamps.length > MAX_POINTS){
+            timestamps.shift();
+            series.forEach(a => a.shift());
+          }
+        }
+      }
+
       const any = scores.some(s => typeof s === "number");
       if (any) {
         const probs = normalize(scores.map(s => (typeof s === "number" ? s : 0)));
-        timestamps.push(nowLabel());
-        probs.forEach((p, i) => series[i].push(p));
-
-        if (timestamps.length > MAX_POINTS){
-          timestamps.shift();
-          series.forEach(a => a.shift());
-        }
 
         beliefChart.data.labels = timestamps;
         if (beliefChart.data.datasets.length === 0) rebuildBeliefDatasets();
@@ -1211,11 +1368,14 @@ async function refresh(){
           ds.borderColor = colorForModelName(modelNames[i]);
         });
 
+        updateBeliefChartScale();
         beliefChart.update();
         document.getElementById("pointsCount").textContent = String(timestamps.length);
         renderModels(probs);
         renderChips();
         applyViewMode();
+        
+        // ⚡ OPTIMIZATION: Render Gap Analysis immediately with belief data
         renderGapAnalysis(probs);
         
         const hasMarketData = Object.keys(latestMarketPrices).length > 0;
@@ -1255,6 +1415,13 @@ async function refresh(){
             }
           }
         });
+        
+        // ⚡ OPTIMIZATION: Re-render Gap Analysis with market prices
+        if (raw.length) {
+          const scores = raw.slice(0, MODEL_COUNT).map(extractScore);
+          const probs = normalize(scores.map(s => (typeof s === "number" ? s : 0)));
+          renderGapAnalysis(probs);
+        }
       }
 
       const datasets = Array.from({length: entryCount}, (_, entryIdx) => {
