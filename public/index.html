@@ -44,7 +44,7 @@
       border-bottom: 1px solid var(--border);
       background: rgba(255,255,255,0.02);
     }
-    .nav-left{ display:flex; align-items:center; gap: 3rem; }
+    .nav-left{ display:flex; align-items:center; gap: 3rem; width: 100%; }
     .brand{ display:flex; flex-direction: column; gap: 0.25rem; margin-left: 1rem; }
     .brand-icon{
       width: 36px; height: 36px;
@@ -114,10 +114,12 @@
       display: flex;
       align-items: center;
       gap: 1.5rem;
+      flex-shrink: 0;
     }
     .built-by{
       color: var(--muted);
       font-size: 0.875rem;
+      white-space: nowrap;
     }
     .built-by a{
       color: var(--text);
@@ -128,6 +130,7 @@
     .social-links{
       display: flex;
       gap: 0.75rem;
+      flex-shrink: 0;
     }
     .social-link{
       width: 32px;
@@ -558,56 +561,71 @@
       font-size: 0.75rem; font-family: 'JetBrains Mono', monospace;
     }
     .miniDot{ width:6px; height:6px; border-radius:50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
-    
-    @media (max-width: 768px){
-      .navbar{
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-        padding: 1rem;
-      }
-      .nav-left{
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-        width: 100%;
-      }
-      .nav-tabs{
-        width: 100%;
-      }
-      .nav-tab{
-        flex: 1;
-        justify-content: center;
-      }
-      .nav-right{
-        width: 100%;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.75rem;
-      }
-      .brand{ margin-left: 0; }
-      .brand h1{ font-size: 1rem; }
-      .built-by{ font-size: 0.75rem; }
-    }
 
-    /* ✅ MOBILE/TABLET OPTIMIZATION (added) */
+    /* ✅ MOBILE/TABLET OPTIMIZATION (fixed navbar) */
     @media (max-width: 1024px){
       .navbar{ padding: 1rem 1.25rem; }
       .nav-left{ gap: 1.25rem; }
       .nav-tabs{ flex-wrap: wrap; }
     }
 
+    /* ✅ IMPORTANT: keep ONLY ONE 768px block (this replaces both previous ones) */
     @media (max-width: 768px){
+      /* NAVBAR */
+      .navbar{
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.9rem 1rem;
+      }
+
+      .nav-left{
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+        width: 100%;
+      }
+
+      .brand{ margin-left: 0; }
+      .brand h1{ font-size: 1.05rem; }
+      .brand-subtitle{ font-size: 0.62rem; letter-spacing: 1.2px; }
+
+      /* Tabs = one-line horizontal scroll (no wrapping mess) */
+      .nav-tabs{
+        width: 100%;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 0.5rem;
+        padding-bottom: 0.25rem;
+      }
+      .nav-tabs::-webkit-scrollbar{ height: 0; }
+      .nav-tabs{ scrollbar-width: none; }
+
+      .nav-tab{
+        flex: 0 0 auto;
+        white-space: nowrap;
+        justify-content: center;
+        padding: 0.45rem 0.7rem;
+        font-size: 0.82rem;
+        border-radius: 10px;
+      }
+
+      /* Right row: Built by + icons same line */
+      .nav-right{
+        width: 100%;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+      .built-by{ font-size: 0.78rem; white-space: nowrap; }
+      .social-links{ gap: 0.5rem; }
+      .social-link{ width: 34px; height: 34px; border-radius: 10px; }
+
+      /* PAGE LAYOUT */
       .wrap > div{ padding: 1rem !important; }
       .topbar{ align-items: flex-start; margin-bottom: 1rem; }
-
-      .nav-tabs{ flex-wrap: wrap; gap: 0.5rem; }
-      .nav-tab{
-        padding: 0.5rem 0.75rem;
-        font-size: 0.8125rem;
-        flex: initial;
-        justify-content: center;
-      }
 
       .stats{ grid-template-columns: 1fr; gap: 0.75rem; }
       .grid{ grid-template-columns: 1fr; gap: 1rem; }
@@ -649,7 +667,6 @@
     }
 
     @media (max-width: 420px){
-      .nav-right{ flex-direction: column; align-items: flex-start; }
       .statusPill{ width: 100%; justify-content: center; }
     }
   </style>
