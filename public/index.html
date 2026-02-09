@@ -414,10 +414,10 @@
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      min-width: 65px;
+      min-width: 100px;
       text-align: center;
     }
-    .gapSignalBadge.sell{
+    .gapSignalBadge.overvalued{
       background: rgba(255,92,124,0.2);
       color: var(--red);
     }
@@ -1050,7 +1050,7 @@ function renderGapAnalysis(beliefProbs){
       signal = 'HOLD';
       gapClass = 'neutral';
     } else if (gapPct > 0) {
-      signal = 'SELL';
+      signal = 'OVERVALUED';
       gapClass = 'overvalued';
     } else {
       signal = 'BUY';
