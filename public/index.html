@@ -4,6 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Live Market - Delphi Beliefs</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="shortcut icon" type="image/png" href="/favicon.png">
+  
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -783,7 +788,7 @@ let MODEL_COUNT = 4;
 let timestamps = [];
 let series = Array.from({ length: MODEL_COUNT }, () => []);
 let latestEvalScores = Array.from({ length: MODEL_COUNT }, () => []);
-let allEvalHistory = Array.from({ length: MODEL_COUNT }, () => []); // ✅ NEW: Store all evals
+let allEvalHistory = Array.from({ length: MODEL_COUNT }, () => []);
 let viewMode = "all";
 let activeSingleIndex = 0;
 let chipEnabled = Array.from({ length: MODEL_COUNT }, () => true);
@@ -818,12 +823,10 @@ function normalize(scores){
   return cleaned.map(v=>v/sum);
 }
 
-// ✅ FIXED: Check 'aggregate' field FIRST - it contains the normalized score that matches Gensyn
 function extractScore(raw){
   const arr = raw?.evals;
   if (!Array.isArray(arr) || arr.length === 0) return null;
   const latest = arr[arr.length - 1];
-  // Priority order: aggregate (normalized score) comes FIRST
   const candidates = ["aggregate","avg_score","avgScore","average_score","score","value"];
   for (const k of candidates){
     const v = latest?.[k];
@@ -978,10 +981,8 @@ function renderModels(probs){
     const pct = `${Math.round(r.p * 1000)/10}%`;
     const color = colorForModelName(r.name);
     const evalTxt = (typeof r.eval === "number" && Number.isFinite(r.eval)) ? r.eval.toFixed(2) : "—";
-    // Capitalize first letter of model name
     const displayName = r.name.charAt(0).toUpperCase() + r.name.slice(1);
 
-    // Build eval history badges
     const evalHistoryHTML = r.evalHistory.length > 0 
       ? `<div class="evalHistory">
           ${r.evalHistory.map((score, evalIdx) => {
@@ -1045,7 +1046,6 @@ function renderGapAnalysis(beliefProbs){
 
   document.getElementById("gapAnalysisList").innerHTML = rows.map((r, idx) => {
     const color = colorForModelName(r.name);
-    // Capitalize first letter of model name
     const displayName = r.name.charAt(0).toUpperCase() + r.name.slice(1);
     
     return `
@@ -1074,7 +1074,6 @@ function renderGapAnalysis(beliefProbs){
     `;
   }).join("");
   
-  // ✅ Update status indicator
   const hasMarketData = Object.keys(latestMarketPrices).length > 0;
   const statusDot = document.getElementById("gapStatusDot");
   const statusText = document.getElementById("gapStatusText");
@@ -1097,7 +1096,6 @@ function renderDelphiLegend(names){
   }).join("");
 }
 
-// ✅ OPTIMIZED REFRESH FUNCTION - PARALLEL API CALLS
 async function refresh(){
   try{
     const [beliefRes, delphiRes] = await Promise.all([
@@ -1128,7 +1126,6 @@ async function refresh(){
       const scores = raw.slice(0, MODEL_COUNT).map(extractScore);
       latestEvalScores = scores.map(s => (typeof s === "number" && Number.isFinite(s)) ? s : null);
 
-      // ✅ NEW: Extract ALL eval history for each model
       allEvalHistory = raw.slice(0, MODEL_COUNT).map(modelData => {
         const evals = modelData?.evals;
         if (!Array.isArray(evals)) return [];
@@ -1168,8 +1165,6 @@ async function refresh(){
         applyViewMode();
         renderGapAnalysis(probs);
         
-        // ✅ Update belief chart status - synced with gap analysis
-        // Both turn green only when gap analysis has market data
         const hasMarketData = Object.keys(latestMarketPrices).length > 0;
         const beliefStatusDot = document.getElementById("beliefStatusDot");
         const beliefStatusText = document.getElementById("beliefStatusText");
@@ -1226,7 +1221,6 @@ async function refresh(){
       marketChart.update();
       renderDelphiLegend(datasets.map(d => d.label));
       
-      // ✅ Update Delphi chart status indicator
       const delphiStatusDot = document.getElementById("delphiChartStatusDot");
       const delphiStatusText = document.getElementById("delphiChartStatusText");
       delphiStatusDot.style.background = "var(--green)";
@@ -1238,7 +1232,6 @@ async function refresh(){
   }
 }
 
-// ✅ PREVENT OVERLAPPING CALLS
 let isRefreshing = false;
 
 async function safeRefresh() {
@@ -1259,18 +1252,14 @@ async function safeRefresh() {
   }
 }
 
-// Initialize charts
 rebuildBeliefDatasets();
 
-// ✅ Set initial belief chart status to Loading
 document.getElementById("beliefStatusDot").style.background = "#FFB84D";
 document.getElementById("beliefStatusDot").style.boxShadow = "0 0 8px #FFB84D";
 document.getElementById("beliefStatusText").textContent = "Loading...";
 
-// Load data immediately
 safeRefresh();
 
-// Auto-refresh every 30 seconds
 setInterval(safeRefresh, REFRESH_MS);
 </script>
 </body>
