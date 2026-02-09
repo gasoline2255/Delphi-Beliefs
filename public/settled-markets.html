@@ -42,14 +42,16 @@
       padding: 1.25rem 2rem;
       border-bottom: 1px solid var(--border);
       background: rgba(255,255,255,0.02);
+      gap: 1rem;
     }
-    .nav-left{ display:flex; align-items:center; gap: 3rem; }
-    .brand{ display:flex; flex-direction: column; gap: 0.25rem; margin-left: 1rem; }
+    .nav-left{ display:flex; align-items:center; gap: 3rem; min-width:0; }
+    .brand{ display:flex; flex-direction: column; gap: 0.25rem; margin-left: 1rem; min-width:0; }
     .brand h1{
       margin:0;
       font-size: 1.25rem;
       font-weight: 700;
       letter-spacing: -0.02em;
+      white-space: nowrap;
     }
     .brand-subtitle{
       font-size: 0.6875rem;
@@ -57,10 +59,13 @@
       font-weight: 600;
       letter-spacing: 1.5px;
       text-transform: uppercase;
+      white-space: nowrap;
     }
     .nav-tabs{
       display: flex;
       gap: 0.5rem;
+      flex-wrap: wrap;
+      min-width:0;
     }
     .nav-tab{
       padding: 0.5rem 1rem;
@@ -73,6 +78,7 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      white-space: nowrap;
     }
     .nav-tab:hover{
       color: var(--text);
@@ -85,15 +91,18 @@
     .nav-tab svg{
       width: 14px;
       height: 14px;
+      flex: 0 0 auto;
     }
     .nav-right{
       display: flex;
       align-items: center;
       gap: 1.5rem;
+      flex: 0 0 auto;
     }
     .built-by{
       color: var(--muted);
       font-size: 0.875rem;
+      white-space: nowrap;
     }
     .built-by a{
       color: var(--text);
@@ -104,6 +113,7 @@
     .social-links{
       display: flex;
       gap: 0.75rem;
+      flex: 0 0 auto;
     }
     .social-link{
       width: 32px;
@@ -143,12 +153,14 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 0.75rem;
     }
     .expandIcon{
       width: 20px;
       height: 20px;
       transition: transform 0.3s;
       color: var(--soft);
+      flex: 0 0 auto;
     }
     .expandIcon.open{
       transform: rotate(180deg);
@@ -175,6 +187,7 @@
       background: rgba(255,255,255,0.03);
       border-radius: 8px;
       border: 1px solid var(--border);
+      min-width: 0;
     }
     .detailLabel{
       font-size: 0.75rem;
@@ -199,12 +212,14 @@
       font-size: 0.75rem;
       color: var(--muted);
       border-bottom: 1px solid var(--border);
+      white-space: nowrap;
     }
     .rankingTable td{
       padding: 0.5rem;
       font-size: 0.875rem;
       color: var(--text);
       border-bottom: 1px solid rgba(255,255,255,0.05);
+      vertical-align: top;
     }
     .rankingTable tr:last-child td{
       border-bottom: none;
@@ -224,6 +239,7 @@
       border-radius: 999px;
       font-size: 0.8125rem;
       font-weight: 600;
+      white-space: nowrap;
     }
     .statusBadge.loading{
       background: rgba(251, 191, 36, 0.2);
@@ -244,36 +260,82 @@
 
     .body{ padding: 1.25rem; }
 
+    /* ✅ MOBILE/TABLET OPTIMIZATION (only) */
+    @media (max-width: 1024px){
+      .navbar{ padding: 1rem 1.25rem; }
+      .nav-left{ gap: 1.25rem; }
+      .nav-tabs{ flex-wrap: wrap; }
+    }
+
     @media (max-width: 768px){
+      .wrap > div{ padding: 1rem !important; }
+
       .navbar{
         flex-direction: column;
         align-items: flex-start;
-        gap: 1rem;
+        gap: 0.875rem;
         padding: 1rem;
       }
+
       .nav-left{
         flex-direction: column;
         align-items: flex-start;
-        gap: 1rem;
+        gap: 0.75rem;
         width: 100%;
       }
+
+      /* tabs become a clean 2-column grid on phones (prevents ugly wrapping) */
       .nav-tabs{
         width: 100%;
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
       }
       .nav-tab{
         width: 100%;
         justify-content: center;
+        padding: 0.55rem 0.6rem;
+        font-size: 0.8125rem;
       }
+      .nav-tab svg{ width: 14px; height: 14px; }
+
       .nav-right{
         width: 100%;
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
         gap: 0.75rem;
       }
+
       .brand{ margin-left: 0; }
       .brand h1{ font-size: 1rem; }
       .built-by{ font-size: 0.75rem; }
+
+      /* market cards tighten + ensure content wraps nicely */
+      .body{ padding: 1rem; }
+      .cardHeader{ padding: 0.875rem 1rem; }
+
+      .detailsGrid{ grid-template-columns: 1fr; }
+      .rankingTable th, .rankingTable td{ padding: 0.5rem 0.4rem; }
+
+      /* make wide table scrollable on small screens without breaking layout */
+      .detailCard table{ display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .detailCard table thead, .detailCard table tbody, .detailCard table tr{ display: table; width: 100%; table-layout: fixed; }
+      .detailCard table{ width: 100%; }
+
+      /* the two summary boxes inside each market card become stacked */
+      .marketCard > div[style*="grid-template-columns: 1fr 1fr"]{
+        grid-template-columns: 1fr !important;
+      }
+    }
+
+    @media (max-width: 420px){
+      .nav-tabs{ grid-template-columns: 1fr; }
+      .nav-right{
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .social-links{ gap: 0.5rem; }
     }
   </style>
 </head>
@@ -402,10 +464,10 @@
           html += `
             <div class="marketCard" style="padding: 15px; background: ${bgColor}; border-radius: 8px; border-left: 3px solid ${color};" onclick="toggleMarket(${idx})">
               <div class="marketCardHeader">
-                <div style="flex: 1;">
-                  <div style="font-weight: 600; color: var(--text); margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
+                <div style="flex: 1; min-width:0;">
+                  <div style="font-weight: 600; color: var(--text); margin-bottom: 5px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                     <span style="font-size: 1.25rem;">${icon}</span>
-                    <span>Market #${displayMarketId}: ${market.marketName}</span>
+                    <span style="min-width:0; overflow:hidden; text-overflow:ellipsis;">Market #${displayMarketId}: ${market.marketName}</span>
                   </div>
                   <div style="font-size: 0.875rem; color: var(--soft);">
                     ${market.evalCount} evaluations completed
@@ -419,12 +481,12 @@
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.875rem; margin-top: 12px;">
                 <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
                   <div style="color: var(--muted); margin-bottom: 4px;">Belief Prediction:</div>
-                  <div style="color: var(--text); font-weight: 600; margin-bottom: 4px;">${market.predictedWinner}</div>
+                  <div style="color: var(--text); font-weight: 600; margin-bottom: 4px; word-break: break-word;">${market.predictedWinner}</div>
                   <div style="color: var(--green); font-weight: 500;">${market.beliefScore.toFixed(1)}% confidence</div>
                 </div>
                 <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
                   <div style="color: var(--muted); margin-bottom: 4px;">Actual Winner:</div>
-                  <div style="color: var(--text); font-weight: 600;">${market.actualWinner}</div>
+                  <div style="color: var(--text); font-weight: 600; word-break: break-word;">${market.actualWinner}</div>
                   <div style="color: ${color}; font-weight: 500; margin-top: 4px;">
                     ${market.correct ? 'Prediction Correct ✓' : 'Prediction Incorrect ✗'}
                   </div>
@@ -446,7 +508,7 @@
                       <tbody>
                         ${market.rankings && market.rankings.length > 0 ? market.rankings.map((r, i) => `
                           <tr>
-                            <td style="font-weight: ${i === 0 ? '700' : '400'}; color: ${i === 0 ? 'var(--green)' : 'var(--text)'}">${r.model}</td>
+                            <td style="font-weight: ${i === 0 ? '700' : '400'}; color: ${i === 0 ? 'var(--green)' : 'var(--text)'}; word-break: break-word;">${r.model}</td>
                             <td style="font-family: 'JetBrains Mono', monospace;">${r.avgScore.toFixed(2)}</td>
                             <td>#${i + 1}</td>
                           </tr>
@@ -467,8 +529,8 @@
                   <div class="detailCard">
                     <div class="detailLabel">🎯 Strategy Performance</div>
                     <div style="color: var(--soft); font-size: 0.875rem; margin-top: 0.5rem;">
-                      <div style="margin-bottom: 0.5rem;">Predicted: <strong style="color: var(--text);">${market.predictedWinner}</strong></div>
-                      <div style="margin-bottom: 0.5rem;">Actual: <strong style="color: var(--text);">${market.actualWinner}</strong></div>
+                      <div style="margin-bottom: 0.5rem;">Predicted: <strong style="color: var(--text); word-break: break-word;">${market.predictedWinner}</strong></div>
+                      <div style="margin-bottom: 0.5rem;">Actual: <strong style="color: var(--text); word-break: break-word;">${market.actualWinner}</strong></div>
                       <div style="color: ${color}; font-weight: 600;">${market.correct ? '✓ Correct Prediction' : '✗ Incorrect Prediction'}</div>
                     </div>
                   </div>
