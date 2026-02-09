@@ -1,6 +1,9 @@
 const express = require("express");
 const path = require("path");
 
+// ✅ (phone/network optimization) gzip compression for faster loads on mobile
+const compression = require("compression");
+
 const app = express();
 const PORT = 3000;
 
@@ -17,6 +20,9 @@ let humanBeliefCache = null;
 let humanBeliefCacheTime = 0;
 const HUMAN_BELIEF_CACHE_MS = 8000; // serve cached for 8s to avoid slow upstream spikes
 const HUMAN_BELIEF_TIMEOUT_MS = 9000; // abort upstream if hanging/pending
+
+// ✅ (phone/network optimization) enable gzip
+app.use(compression());
 
 app.use(express.static(path.join(__dirname, "public")));
 
