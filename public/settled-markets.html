@@ -40,11 +40,11 @@
     }
     .nav-left{ display:flex; align-items:center; gap: 3rem; }
     .brand{ display:flex; flex-direction: column; gap: 0.25rem; margin-left: 1rem; }
-    .brand h1{ 
-      margin:0; 
-      font-size: 1.25rem; 
-      font-weight: 700; 
-      letter-spacing: -0.02em; 
+    .brand h1{
+      margin:0;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
     }
     .brand-subtitle{
       font-size: 0.6875rem;
@@ -280,7 +280,7 @@
         <h1>Delphi Beliefs</h1>
         <div class="brand-subtitle">Gensyn Testnet</div>
       </div>
-      
+
       <div class="nav-tabs">
         <a href="/" class="nav-tab">Live Market</a>
         <a href="/settled-markets" class="nav-tab active">Settled Markets</a>
@@ -295,7 +295,7 @@
         </a>
       </div>
     </div>
-    
+
     <div class="nav-right">
       <div class="built-by">
         Built by <a href="https://github.com/gasoline2255" target="_blank" rel="noopener">gasoline</a>
@@ -317,8 +317,7 @@
 
   <div class="wrap">
     <div style="padding: 2rem;">
-      
-      <!-- Historical Analysis Card -->
+
       <div class="card">
         <div class="cardHeader">
           <div class="cardTitle">📊 Strategy Validation on Settled Markets</div>
@@ -346,15 +345,14 @@
     async function loadHistoricalAnalysis() {
       const statusBadge = document.getElementById('historicalStatus');
       const container = document.getElementById('historicalAnalysis');
-      
+
       try {
         const response = await fetch('/api/historical-analysis');
         const data = await response.json();
-        
+
         console.log('📊 Historical Analysis Data:', data);
         console.log('📊 Markets:', data.markets);
-        
-        // Update status badge
+
         if (data.winRate >= 66) {
           statusBadge.textContent = `${data.winRate.toFixed(0)}% Win Rate`;
           statusBadge.className = 'statusBadge success';
@@ -365,8 +363,7 @@
           statusBadge.textContent = `${data.winRate.toFixed(0)}% Win Rate`;
           statusBadge.className = 'statusBadge error';
         }
-        
-        // Build results HTML
+
         let html = `
           <div style="margin-bottom: 20px; padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border-left: 3px solid var(--green);">
             <h3 style="margin: 0 0 10px 0; color: var(--green); font-size: 1.25rem;">
@@ -376,10 +373,10 @@
               Belief-based analysis predicted ${data.winRate.toFixed(0)}% of winners correctly using normalized eval scores
             </p>
           </div>
-          
+
           <div style="display: grid; gap: 15px;">
         `;
-        
+
         data.markets.forEach((market, idx) => {
           if (market.error) {
             html += `
@@ -391,17 +388,20 @@
             return;
           }
 
+          // ✅ FIX: sequential numbering (Market #1, #2, #3...) based on list order
+          const displayMarketId = idx + 1;
+
           const icon = market.correct ? '✅' : '❌';
           const color = market.correct ? 'var(--green)' : 'var(--red)';
           const bgColor = market.correct ? 'rgba(0, 216, 159, 0.1)' : 'rgba(255, 92, 124, 0.1)';
-          
+
           html += `
             <div class="marketCard" style="padding: 15px; background: ${bgColor}; border-radius: 8px; border-left: 3px solid ${color};" onclick="toggleMarket(${idx})">
               <div class="marketCardHeader">
                 <div style="flex: 1;">
                   <div style="font-weight: 600; color: var(--text); margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
                     <span style="font-size: 1.25rem;">${icon}</span>
-                    <span>Market #${market.marketId}: ${market.marketName}</span>
+                    <span>Market #${displayMarketId}: ${market.marketName}</span>
                   </div>
                   <div style="font-size: 0.875rem; color: var(--soft);">
                     ${market.evalCount} evaluations completed
@@ -411,7 +411,7 @@
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
               </div>
-              
+
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.875rem; margin-top: 12px;">
                 <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
                   <div style="color: var(--muted); margin-bottom: 4px;">Belief Prediction:</div>
@@ -426,7 +426,7 @@
                   </div>
                 </div>
               </div>
-              
+
               <div class="expandedContent" id="content-${idx}">
                 <div class="detailsGrid">
                   <div class="detailCard">
@@ -450,7 +450,7 @@
                       </tbody>
                     </table>
                   </div>
-                  
+
                   <div class="detailCard">
                     <div class="detailLabel">📈 Evaluation Breakdown</div>
                     <div style="color: var(--soft); font-size: 0.875rem; margin-top: 0.5rem;">
@@ -459,7 +459,7 @@
                       <div>Winner Confidence: <strong style="color: var(--green);">${market.beliefScore.toFixed(1)}%</strong></div>
                     </div>
                   </div>
-                  
+
                   <div class="detailCard">
                     <div class="detailLabel">🎯 Strategy Performance</div>
                     <div style="color: var(--soft); font-size: 0.875rem; margin-top: 0.5rem;">
@@ -473,10 +473,10 @@
             </div>
           `;
         });
-        
+
         html += '</div>';
         container.innerHTML = html;
-        
+
       } catch (error) {
         console.error('Error loading historical analysis:', error);
         statusBadge.textContent = 'Error';
@@ -486,11 +486,11 @@
         `;
       }
     }
-    
+
     function toggleMarket(idx) {
       const content = document.getElementById(`content-${idx}`);
       const icon = document.getElementById(`expand-${idx}`);
-      
+
       if (content.classList.contains('open')) {
         content.classList.remove('open');
         icon.classList.remove('open');
@@ -500,7 +500,6 @@
       }
     }
 
-    // Load on page load
     loadHistoricalAnalysis();
   </script>
 </body>
