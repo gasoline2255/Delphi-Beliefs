@@ -97,6 +97,11 @@ app.get("/settled-markets", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "settled-markets.html"));
 });
 
+// ✅ WHAT IS DELPHI BELIEFS PAGE ROUTE
+app.get("/what-is-delphi-beliefs", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "what-is-delphi-beliefs.html"));
+});
+
 // ✅ HISTORICAL ANALYSIS - WITH HARDCODED ENTRY MAPS
 app.get("/api/historical-analysis", async (req, res) => {
   try {
