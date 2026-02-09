@@ -589,6 +589,69 @@
       .brand h1{ font-size: 1rem; }
       .built-by{ font-size: 0.75rem; }
     }
+
+    /* ✅ MOBILE/TABLET OPTIMIZATION (added) */
+    @media (max-width: 1024px){
+      .navbar{ padding: 1rem 1.25rem; }
+      .nav-left{ gap: 1.25rem; }
+      .nav-tabs{ flex-wrap: wrap; }
+    }
+
+    @media (max-width: 768px){
+      .wrap > div{ padding: 1rem !important; }
+      .topbar{ align-items: flex-start; margin-bottom: 1rem; }
+
+      .nav-tabs{ flex-wrap: wrap; gap: 0.5rem; }
+      .nav-tab{
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8125rem;
+        flex: initial;
+        justify-content: center;
+      }
+
+      .stats{ grid-template-columns: 1fr; gap: 0.75rem; }
+      .grid{ grid-template-columns: 1fr; gap: 1rem; }
+
+      .cardHeader{ padding: 0.875rem 1rem; }
+      .body{ padding: 1rem; }
+      .cardInner{ padding: 1rem; }
+
+      .chipsWrap{ padding: 0.75rem 1rem 0; gap: 0.5rem; }
+      .chip{ padding: 0.45rem 0.65rem; font-size: 0.75rem; }
+
+      .chartShell canvas{ height: 240px !important; }
+      #delphiChartCanvas{ height: 280px !important; }
+
+      .gapCard{
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+        padding: 0.875rem 1rem;
+      }
+      .gapMetrics{
+        width: 100%;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+      .gapRight{
+        width: 100%;
+        margin-left: 0;
+        justify-content: space-between;
+      }
+      .gapSignalBadge{ min-width: auto; flex: 1; text-align: center; }
+      .gapDiffBadge{ min-width: auto; }
+
+      .modelRow{ padding: 0.875rem; }
+      .mName{ font-size: 0.875rem; }
+
+      /* optional performance on phone */
+      .evalHistory{ display: none; }
+    }
+
+    @media (max-width: 420px){
+      .nav-right{ flex-direction: column; align-items: flex-start; }
+      .statusPill{ width: 100%; justify-content: center; }
+    }
   </style>
 </head>
 
@@ -700,7 +763,7 @@
       <div class="body">
         <div id="gapAnalysisList"></div>
         <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.8125rem; color: var(--soft); line-height: 1.6;">
-          Compares model performance (Belief) vs market sentiment (Market). Positive gaps = overvalued (SELL opportunity), negative gaps = undervalued (BUY opportunity).
+          Compares model performance (Belief) vs market sentiment (Market).
         </div>
       </div>
     </div>
