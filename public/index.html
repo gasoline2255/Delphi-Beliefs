@@ -179,7 +179,7 @@
     }
     .cardInner{ padding: 1.25rem; }
     .k{ color: var(--muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-    .v{ margin-top: 0.5rem; font-size: 1.125rem; font-weight: 700; }
+    .v{ margin-top: 0.5rem; font-size: 1.125rem; font-weight: 700; line-height: 1.4; min-height: 1.6rem; }
     .splitRow{
       display:flex; justify-content:space-between;
       margin-top: 0.625rem; font-size: 0.8125rem;
@@ -377,11 +377,14 @@
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.9375rem;
       color: var(--text);
+      min-width: 60px;
+      text-align: left;
     }
     .gapRight{
       display: flex;
       align-items: center;
       gap: 1rem;
+      margin-left: 3rem;
     }
     .gapDiffBadge{
       padding: 0.5rem 0.875rem;
@@ -389,7 +392,7 @@
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.875rem;
       font-weight: 800;
-      min-width: 70px;
+      min-width: 80px;
       text-align: center;
     }
     .gapDiffBadge.overvalued{
@@ -414,7 +417,7 @@
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      min-width: 100px;
+      min-width: 130px;
       text-align: center;
     }
     .gapSignalBadge.overvalued{
@@ -651,8 +654,8 @@
           <div class="k">Status</div>
           <div class="v" id="marketStatus">—</div>
           <div class="splitRow">
-            <div class="subV">Auto refresh</div>
-            <div class="subRight" id="refreshInfo">30s</div>
+            <div class="subV">Points</div>
+            <div class="subRight" id="pointsCount">0</div>
           </div>
         </div>
       </div>
@@ -662,8 +665,8 @@
           <div class="k">Last update</div>
           <div class="v" id="lastUpdate">—</div>
           <div class="splitRow">
-            <div class="subV">Points</div>
-            <div class="subRight" id="pointsCount">0</div>
+            <div class="subV">Auto refresh</div>
+            <div class="subRight" id="refreshInfo">30s</div>
           </div>
         </div>
       </div>
@@ -700,7 +703,7 @@
     <div class="grid">
       <div class="card">
         <div class="cardHeader">
-          <div class="cardTitle">Belief splitter chart</div>
+          <div class="cardTitle">Belief chart</div>
           <div class="chartHeaderRight">
             <div class="seg">
               <button class="segBtn active" id="segAll">All models</button>
@@ -710,8 +713,6 @@
               <div class="tbLabel">Top belief</div>
               <div class="tbValue" id="topBeliefPct">—</div>
             </div>
-            <button class="btnPrimary" id="btnExport">Export JSON</button>
-            <button id="btnClear">Clear</button>
           </div>
         </div>
 
@@ -736,7 +737,7 @@
 
       <div class="card">
         <div class="cardHeader">
-          <div class="cardTitle">Models (latest belief)</div>
+          <div class="cardTitle">Models ranking</div>
           <div class="hintPill">
             <span class="dot" style="width:6px;height:6px;"></span>
             <span id="rightHint">Live</span>
@@ -806,7 +807,8 @@ function colorForModelName(name){
 }
 
 function nowLabel(){
-  return new Date().toLocaleTimeString([], { hour:"2-digit", minute:"2-digit", second:"2-digit" });
+  const now = new Date();
+  return now.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit", second:"2-digit", hour12: true });
 }
 
 function normalize(scores){
@@ -964,31 +966,6 @@ document.getElementById("segOne").addEventListener("click", () => {
   renderChips();
 });
 
-document.getElementById("btnClear").addEventListener("click", () => {
-  timestamps = [];
-  series.forEach(a => a.length = 0);
-  beliefChart.data.labels = timestamps;
-  beliefChart.update();
-  document.getElementById("pointsCount").textContent = "0";
-  document.getElementById("topBeliefPct").textContent = "—";
-});
-
-document.getElementById("btnExport").addEventListener("click", async () => {
-  try{
-    const res = await fetch("/api/human-belief");
-    const data = await res.json();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `belief-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }catch(e){
-    alert("Export failed");
-  }
-});
-
 function renderModels(probs){
   const rows = modelNames.map((name, i) => ({
     i, name,
@@ -1001,6 +978,8 @@ function renderModels(probs){
     const pct = `${Math.round(r.p * 1000)/10}%`;
     const color = colorForModelName(r.name);
     const evalTxt = (typeof r.eval === "number" && Number.isFinite(r.eval)) ? r.eval.toFixed(2) : "—";
+    // Capitalize first letter of model name
+    const displayName = r.name.charAt(0).toUpperCase() + r.name.slice(1);
 
     // Build eval history badges
     const evalHistoryHTML = r.evalHistory.length > 0 
@@ -1019,8 +998,7 @@ function renderModels(probs){
         <div class="mLeft">
           <div class="badge" style="border-color:${color}33;background:${color}18;color:${color}">#${idx+1}</div>
           <div style="min-width:0; flex: 1;">
-            <div class="mName">${escapeHtml(r.name)}</div>
-            <div class="mSub">rank ${idx+1}</div>
+            <div class="mName">${escapeHtml(displayName)}</div>
             <div class="mEval">Latest: ${evalTxt}</div>
             ${evalHistoryHTML}
           </div>
@@ -1067,11 +1045,14 @@ function renderGapAnalysis(beliefProbs){
 
   document.getElementById("gapAnalysisList").innerHTML = rows.map((r, idx) => {
     const color = colorForModelName(r.name);
+    // Capitalize first letter of model name
+    const displayName = r.name.charAt(0).toUpperCase() + r.name.slice(1);
+    
     return `
       <div class="gapCard">
         <div class="gapLeft">
           <div class="badge" style="border-color:${color}33;background:${color}18;color:${color}">#${idx+1}</div>
-          <div class="gapModelName">${escapeHtml(r.name)}</div>
+          <div class="gapModelName">${escapeHtml(displayName)}</div>
         </div>
         
         <div class="gapMetrics">
@@ -1137,7 +1118,8 @@ async function refresh(){
 
     document.getElementById("marketName").textContent = data.market_name || "Delphi market";
     document.getElementById("marketNumber").textContent = `Market #${data.market_id ?? "—"}`;
-    document.getElementById("marketStatus").textContent = data.status || "—";
+    const status = (data.status || "—").charAt(0).toUpperCase() + (data.status || "—").slice(1).toLowerCase();
+    document.getElementById("marketStatus").textContent = status;
     document.getElementById("lastUpdate").textContent = nowLabel();
     document.getElementById("modelsCount").textContent = String(MODEL_COUNT);
 

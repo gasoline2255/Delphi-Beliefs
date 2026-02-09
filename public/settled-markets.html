@@ -127,6 +127,84 @@
       margin-bottom: 1.5rem;
     }
 
+    .marketCard{
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .marketCard:hover{
+      background: rgba(255,255,255,0.06);
+    }
+    .marketCardHeader{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .expandIcon{
+      width: 20px;
+      height: 20px;
+      transition: transform 0.3s;
+      color: var(--soft);
+    }
+    .expandIcon.open{
+      transform: rotate(180deg);
+    }
+    .expandedContent{
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+    .expandedContent.open{
+      max-height: 2000px;
+      transition: max-height 0.5s ease-in;
+    }
+    .detailsGrid{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .detailCard{
+      padding: 1rem;
+      background: rgba(255,255,255,0.03);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .detailLabel{
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+    }
+    .detailValue{
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .rankingTable{
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+    }
+    .rankingTable th{
+      text-align: left;
+      padding: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .rankingTable td{
+      padding: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--text);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .rankingTable tr:last-child td{
+      border-bottom: none;
+    }
+
     .cardHeader{
       display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;
       padding: 1rem 1.25rem;
@@ -273,6 +351,9 @@
         const response = await fetch('/api/historical-analysis');
         const data = await response.json();
         
+        console.log('📊 Historical Analysis Data:', data);
+        console.log('📊 Markets:', data.markets);
+        
         // Update status badge
         if (data.winRate >= 66) {
           statusBadge.textContent = `${data.winRate.toFixed(0)}% Win Rate`;
@@ -299,7 +380,7 @@
           <div style="display: grid; gap: 15px;">
         `;
         
-        data.markets.forEach(market => {
+        data.markets.forEach((market, idx) => {
           if (market.error) {
             html += `
               <div style="padding: 15px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border-left: 3px solid var(--red);">
@@ -315,9 +396,9 @@
           const bgColor = market.correct ? 'rgba(0, 216, 159, 0.1)' : 'rgba(255, 92, 124, 0.1)';
           
           html += `
-            <div style="padding: 15px; background: ${bgColor}; border-radius: 8px; border-left: 3px solid ${color};">
-              <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
-                <div>
+            <div class="marketCard" style="padding: 15px; background: ${bgColor}; border-radius: 8px; border-left: 3px solid ${color};" onclick="toggleMarket(${idx})">
+              <div class="marketCardHeader">
+                <div style="flex: 1;">
                   <div style="font-weight: 600; color: var(--text); margin-bottom: 5px; display: flex; align-items: center; gap: 8px;">
                     <span style="font-size: 1.25rem;">${icon}</span>
                     <span>Market #${market.marketId}: ${market.marketName}</span>
@@ -326,9 +407,12 @@
                     ${market.evalCount} evaluations completed
                   </div>
                 </div>
+                <svg class="expandIcon" id="expand-${idx}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
               </div>
               
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.875rem;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 0.875rem; margin-top: 12px;">
                 <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
                   <div style="color: var(--muted); margin-bottom: 4px;">Belief Prediction:</div>
                   <div style="color: var(--text); font-weight: 600; margin-bottom: 4px;">${market.predictedWinner}</div>
@@ -339,6 +423,50 @@
                   <div style="color: var(--text); font-weight: 600;">${market.actualWinner}</div>
                   <div style="color: ${color}; font-weight: 500; margin-top: 4px;">
                     ${market.correct ? 'Prediction Correct ✓' : 'Prediction Incorrect ✗'}
+                  </div>
+                </div>
+              </div>
+              
+              <div class="expandedContent" id="content-${idx}">
+                <div class="detailsGrid">
+                  <div class="detailCard">
+                    <div class="detailLabel">📊 Ranking Progress</div>
+                    <table class="rankingTable">
+                      <thead>
+                        <tr>
+                          <th>Model</th>
+                          <th>Avg Score</th>
+                          <th>Rank</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${market.rankings && market.rankings.length > 0 ? market.rankings.map((r, i) => `
+                          <tr>
+                            <td style="font-weight: ${i === 0 ? '700' : '400'}; color: ${i === 0 ? 'var(--green)' : 'var(--text)'}">${r.model}</td>
+                            <td style="font-family: 'JetBrains Mono', monospace;">${r.avgScore.toFixed(2)}</td>
+                            <td>#${i + 1}</td>
+                          </tr>
+                        `).join('') : '<tr><td colspan="3" style="text-align: center; color: var(--muted); padding: 1rem;">No ranking data available</td></tr>'}
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  <div class="detailCard">
+                    <div class="detailLabel">📈 Evaluation Breakdown</div>
+                    <div style="color: var(--soft); font-size: 0.875rem; margin-top: 0.5rem;">
+                      <div style="margin-bottom: 0.5rem;">Total Evaluations: <strong style="color: var(--text);">${market.evalCount}</strong></div>
+                      <div style="margin-bottom: 0.5rem;">Prediction Method: <strong style="color: var(--text);">Normalized Scores</strong></div>
+                      <div>Winner Confidence: <strong style="color: var(--green);">${market.beliefScore.toFixed(1)}%</strong></div>
+                    </div>
+                  </div>
+                  
+                  <div class="detailCard">
+                    <div class="detailLabel">🎯 Strategy Performance</div>
+                    <div style="color: var(--soft); font-size: 0.875rem; margin-top: 0.5rem;">
+                      <div style="margin-bottom: 0.5rem;">Predicted: <strong style="color: var(--text);">${market.predictedWinner}</strong></div>
+                      <div style="margin-bottom: 0.5rem;">Actual: <strong style="color: var(--text);">${market.actualWinner}</strong></div>
+                      <div style="color: ${color}; font-weight: 600;">${market.correct ? '✓ Correct Prediction' : '✗ Incorrect Prediction'}</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -356,6 +484,19 @@
         container.innerHTML = `
           <p style="color: var(--red);">Failed to load historical data. Please try again later.</p>
         `;
+      }
+    }
+    
+    function toggleMarket(idx) {
+      const content = document.getElementById(`content-${idx}`);
+      const icon = document.getElementById(`expand-${idx}`);
+      
+      if (content.classList.contains('open')) {
+        content.classList.remove('open');
+        icon.classList.remove('open');
+      } else {
+        content.classList.add('open');
+        icon.classList.add('open');
       }
     }
 

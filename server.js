@@ -55,39 +55,42 @@ function getCorrectEntryMap() {
   };
 }
 
-// ✅ HARDCODED ENTRY MAPS FOR SETTLED MARKETS
+// ✅ HARDCODED ENTRY MAPS FOR SETTLED MARKETS (CORRECTED WITH OFFICIAL DATA)
 const SETTLED_MARKETS_CONFIG = {
   0: {
     name: 'Middleweight General Reasoning',
-    winner: 'Qwen/Qwen3-30B-A3B-Instruct-2507',
+    winner: 'QWEN/QWEN3-30B-A3B-INSTRUCT-2507',
     closedDate: 'Dec 29, 2024',
     entryMap: {
-      "0": "Qwen/Qwen3-30B-A3B-Instruct-2507",
-      "1": "Meta-Llama/Llama-3.3-70B-Instruct",
-      "2": "deepseek-ai/DeepSeek-V3",
-      "3": "Qwen/QwQ-32B-Preview"
+      "0": "QWEN/QWEN3-30B-A3B-INSTRUCT-2507",      // 19.90% - 55.88
+      "1": "ZAI-ORG/GLM-4-32B-0414",                // 23.90% - 49.48
+      "2": "TIIUAE/FALCON-H1-34B-INSTRUCT",         // 23.70% - 48.50
+      "3": "GOOGLE/GEMMA-3-27B-IT",                 // 19.00% - 51.49
+      "4": "OPENAI/GPT-OSS-20B"                     // 13.50% - 52.52
     }
   },
   1: {
     name: 'Middleweight General Reasoning (II)',
-    winner: 'Qwen/Qwen3-30B-A3B-Instruct-2507',
+    winner: 'QWEN/QWEN3-30B-A3B-INSTRUCT-2507',
     closedDate: 'Dec 29, 2024',
     entryMap: {
-      "0": "Qwen/Qwen3-30B-A3B-Instruct-2507",
-      "1": "Meta-Llama/Llama-3.3-70B-Instruct",
-      "2": "deepseek-ai/DeepSeek-V3",
-      "3": "Qwen/QwQ-32B-Preview"
+      "0": "QWEN/QWEN3-30B-A3B-INSTRUCT-2507",
+      "1": "OPENAI/GPT-OSS-20B",
+      "2": "GOOGLE/GEMMA-3-27B-IT",
+      "3": "ZAI-ORG/GLM-4-32B-0414",
+      "4": "TIIUAE/FALCON-H1-34B-INSTRUCT"
     }
   },
   3: {
     name: 'Lightweight General Reasoning',
-    winner: 'Qwen/Qwen3-8B',
+    winner: 'QWEN/QWEN3-8B',
     closedDate: 'Jan 30, 2025',
     entryMap: {
-      "0": "Qwen/Qwen3-8B",
-      "1": "google/gemini-2.0-flash-exp",
-      "2": "Alibaba-NLP/gte-Qwen2-1.5B-instruct",
-      "3": "meta-llama/Llama-3.2-3B-Instruct"
+      "0": "QWEN/QWEN3-8B",
+      "1": "MISTRALAI/MINISTRAL-3-8B-INSTRUCT-2512",
+      "2": "IBM-GRANITE/GRANITE-4.0-H-TINY",
+      "3": "ALLENAI/OLMO-3-7B-INSTRUCT",
+      "4": "META-LLAMA/LLAMA-3.1-8B-INSTRUCT"
     }
   }
 };
@@ -188,6 +191,11 @@ app.get("/api/historical-analysis", async (req, res) => {
 
         console.log(`   ${correct ? '✅ CORRECT' : '❌ INCORRECT'}`);
 
+        // ✅ Create rankings sorted by score
+        const rankings = Object.entries(modelScores)
+          .map(([model, score]) => ({ model, avgScore: score }))
+          .sort((a, b) => b.avgScore - a.avgScore);
+
         results.push({
           marketId: id,
           marketName: config.name,
@@ -196,7 +204,8 @@ app.get("/api/historical-analysis", async (req, res) => {
           beliefScore: topBelief,
           correct: correct,
           evalCount: evalCount,
-          allBeliefs: beliefs
+          allBeliefs: beliefs,
+          rankings: rankings
         });
 
       } catch (error) {
