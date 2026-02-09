@@ -428,15 +428,15 @@
       min-width: 130px;
       text-align: center;
     }
-    .gapSignalBadge.overvalued{
+    .gapSignalBadge.overpriced{
       background: rgba(255,92,124,0.2);
       color: var(--red);
     }
-    .gapSignalBadge.buy{
+    .gapSignalBadge.underpriced{
       background: rgba(0,216,159,0.2);
       color: var(--green);
     }
-    .gapSignalBadge.hold{
+    .gapSignalBadge.aligned{
       background: rgba(160,170,192,0.2);
       color: var(--soft);
     }
@@ -449,108 +449,49 @@
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 1rem;
     }
-    .gapCard{
-      border: 1px solid var(--border);
-      border-radius: 12px;
+
+    .gapExplanation{
+      margin-top: 1rem;
       padding: 1.25rem;
-      background: rgba(255,255,255,0.03);
-      position: relative;
-      overflow: hidden;
-    }
-    .gapCard::before{
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 4px;
-      background: var(--model-color);
-    }
-    .gapHeader{
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-    .gapModelName{
-      font-weight: 700;
-      font-size: 0.9375rem;
-      color: var(--text);
-    }
-    .gapSignal{
-      padding: 0.375rem 0.75rem;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .gapSignal.buy{
-      background: rgba(0,216,159,0.15);
-      color: var(--green);
-      border: 1px solid rgba(0,216,159,0.3);
-    }
-    .gapSignal.sell{
-      background: rgba(255,92,124,0.15);
-      color: var(--red);
-      border: 1px solid rgba(255,92,124,0.3);
-    }
-    .gapSignal.hold{
-      background: rgba(160,170,192,0.15);
-      color: var(--soft);
-      border: 1px solid rgba(160,170,192,0.3);
-    }
-    .gapMetrics{
+      border-top: 1px solid var(--border);
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    .gapExplainItem{
+      display: flex;
       gap: 0.75rem;
-      margin-bottom: 1rem;
+      align-items: flex-start;
     }
-    .gapMetric{
-      background: rgba(255,255,255,0.02);
-      padding: 0.75rem;
-      border-radius: 8px;
-    }
-    .gapMetricLabel{
-      font-size: 0.6875rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 0.25rem;
-    }
-    .gapMetricValue{
+    .gapExplainIcon{
       font-size: 1.125rem;
-      font-weight: 800;
-      font-family: 'JetBrains Mono', monospace;
-      color: var(--text);
+      line-height: 1;
+      margin-top: 0.125rem;
     }
-    .gapDiff{
-      text-align: center;
-      padding: 0.875rem;
-      border-radius: 8px;
-      background: rgba(255,255,255,0.02);
-      border: 1px solid var(--border);
+    .gapExplainContent{
+      flex: 1;
     }
-    .gapDiffLabel{
-      font-size: 0.6875rem;
+    .gapExplainTitle{
+      font-size: 0.8125rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .gapExplainTitle.underpriced{ color: var(--green); }
+    .gapExplainTitle.overpriced{ color: var(--red); }
+    .gapExplainTitle.aligned{ color: var(--soft); }
+    .gapExplainDesc{
+      font-size: 0.75rem;
       color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 0.375rem;
+      line-height: 1.5;
     }
-    .gapDiffValue{
-      font-size: 1.5rem;
-      font-weight: 900;
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .gapDiffValue.positive{
-      color: var(--red);
-    }
-    .gapDiffValue.negative{
-      color: var(--green);
-    }
-    .gapDiffValue.neutral{
+    .gapExplainFormula{
+      font-size: 0.6875rem;
       color: var(--soft);
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 0.25rem;
     }
 
     .miniMetaPill{
@@ -658,6 +599,12 @@
       }
       .gapSignalBadge{ min-width: auto; flex: 1; text-align: center; }
       .gapDiffBadge{ min-width: auto; }
+
+      .gapExplanation{
+        grid-template-columns: 1fr;
+        gap: 0.875rem;
+        padding: 1rem;
+      }
 
       .modelRow{ padding: 0.875rem; }
       .mName{ font-size: 0.875rem; }
@@ -779,8 +726,34 @@
       </div>
       <div class="body">
         <div id="gapAnalysisList"></div>
-        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.8125rem; color: var(--soft); line-height: 1.6;">
-          Compares model performance (Belief) vs market sentiment (Market).
+        
+        <div class="gapExplanation">
+          <div class="gapExplainItem">
+            <div class="gapExplainIcon">🟢</div>
+            <div class="gapExplainContent">
+              <div class="gapExplainTitle underpriced">UNDERPRICED</div>
+              <div class="gapExplainFormula">Belief > Market</div>
+              <div class="gapExplainDesc">Model's performance suggests higher value than current market price indicates.</div>
+            </div>
+          </div>
+          
+          <div class="gapExplainItem">
+            <div class="gapExplainIcon">🔴</div>
+            <div class="gapExplainContent">
+              <div class="gapExplainTitle overpriced">OVERPRICED</div>
+              <div class="gapExplainFormula">Market > Belief</div>
+              <div class="gapExplainDesc">Market price exceeds what performance data alone would suggest.</div>
+            </div>
+          </div>
+          
+          <div class="gapExplainItem">
+            <div class="gapExplainIcon">⚪</div>
+            <div class="gapExplainContent">
+              <div class="gapExplainTitle aligned">ALIGNED</div>
+              <div class="gapExplainFormula">Prices match performance</div>
+              <div class="gapExplainDesc">Market price closely reflects model's performance relative to competitors.</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1104,16 +1077,16 @@ function renderGapAnalysis(beliefProbs){
     const gap = market - belief;
     const gapPct = Math.round(gap * 1000) / 10;
     
-    let signal = 'HOLD';
+    let signal = 'ALIGNED';
     let gapClass = 'neutral';
     if (Math.abs(gapPct) < 5) {
-      signal = 'HOLD';
+      signal = 'ALIGNED';
       gapClass = 'neutral';
     } else if (gapPct > 0) {
-      signal = 'OVERVALUED';
+      signal = 'OVERPRICED';
       gapClass = 'overvalued';
     } else {
-      signal = 'BUY';
+      signal = 'UNDERPRICED';
       gapClass = 'undervalued';
     }
 
@@ -1161,7 +1134,7 @@ function renderGapAnalysis(beliefProbs){
   if (hasMarketData) {
     statusDot.style.background = "var(--green)";
     statusDot.style.boxShadow = "0 0 8px var(--green)";
-    statusText.textContent = "Trading Opportunities";
+    statusText.textContent = "Price Analysis";
   } else {
     statusDot.style.background = "#FFB84D";
     statusDot.style.boxShadow = "0 0 8px #FFB84D";

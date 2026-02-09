@@ -234,15 +234,15 @@
       border: 1px solid var(--border);
       background: rgba(255,255,255,0.03);
     }
-    .signal-card.buy{
+    .signal-card.underpriced{
       border-left: 3px solid var(--green);
       background: rgba(0,216,159,0.05);
     }
-    .signal-card.overvalued{
+    .signal-card.overpriced{
       border-left: 3px solid var(--red);
       background: rgba(255,92,124,0.05);
     }
-    .signal-card.hold{
+    .signal-card.aligned{
       border-left: 3px solid var(--soft);
       background: rgba(160,170,192,0.05);
     }
@@ -251,9 +251,9 @@
       margin-bottom: 0.5rem;
       font-weight: 700;
     }
-    .signal-card.buy h4{ color: var(--green); }
-    .signal-card.overvalued h4{ color: var(--red); }
-    .signal-card.hold h4{ color: var(--soft); }
+    .signal-card.underpriced h4{ color: var(--green); }
+    .signal-card.overpriced h4{ color: var(--red); }
+    .signal-card.aligned h4{ color: var(--soft); }
     .signal-card p{
       font-size: 0.875rem;
       margin: 0;
@@ -406,25 +406,25 @@
       
       <div class="hero">
         <h1>What is Delphi Beliefs?</h1>
-        <p>A real-time analytics dashboard for Gensyn Delphi prediction markets that helps you find trading opportunities</p>
+        <p>A real-time analytics dashboard for Gensyn Delphi prediction markets that tracks performance-price relationships</p>
       </div>
 
       <div class="section">
         <h2>🎯 Overview</h2>
         <p>
-          Delphi Beliefs is an independent analytics tool built for traders on <strong>Gensyn Delphi</strong>, a prediction market platform where users bet on which AI models will perform best on benchmark tests. Our dashboard compares model performance data (what we call "Belief") against market prices to identify potential trading opportunities.
+          Delphi Beliefs is an independent analytics tool built for <strong>Gensyn Delphi</strong>, a prediction market platform where users bet on which AI models will perform best on benchmark tests. Our dashboard compares model performance data (what we call "Belief") against market prices to identify discrepancies and patterns.
         </p>
       </div>
 
       <div class="section">
-        <h2>🤔 The Problem We Solve</h2>
+        <h2>🤔 What We Analyze</h2>
         <p>
-          On Gensyn Delphi, AI models compete in benchmark tests like MMLU Pro, GPQA Diamond, and others. Traders buy and sell shares predicting which model will win. However, it's hard to know if market prices reflect actual model performance. That's where we come in.
+          On Gensyn Delphi, AI models compete in benchmark tests like MMLU Pro, GPQA Diamond, and others. Market participants buy and sell shares predicting which model will win. We track whether market prices align with actual model performance to reveal interesting pricing patterns.
         </p>
         
         <div class="highlight-box">
-          <h4>The Gap</h4>
-          <p>Market prices often don't match model performance. When there's a gap, there's an opportunity to profit.</p>
+          <h4>Performance-Price Divergence</h4>
+          <p>Market prices often diverge from actual model performance data. These discrepancies reveal interesting patterns in how the market values different models relative to their benchmark results.</p>
         </div>
       </div>
 
@@ -433,7 +433,7 @@
         
         <h3>1. We Calculate "Belief"</h3>
         <p>
-          As benchmark results come in, we normalize the scores to create a probability distribution. This represents what we <em>believe</em> each model's chance of winning should be based on performance data.
+          As benchmark results come in, we normalize the scores to create a probability distribution. This represents what we <em>believe</em> each model's chance of winning should be based purely on performance data.
         </p>
         
         <div class="formula">
@@ -449,28 +449,28 @@
 
         <h3>2. We Compare Against Market Price</h3>
         <p>
-          We fetch live market prices from Gensyn Delphi and compare them to our calculated Belief percentages. The difference reveals trading opportunities.
+          We fetch live market prices from Gensyn Delphi and compare them to our calculated Belief percentages. The difference reveals pricing patterns and market sentiment.
         </p>
 
-        <h3>3. We Generate Trading Signals</h3>
+        <h3>3. We Categorize Price Relationships</h3>
         <p>
-          Based on the gap between Belief and Market price, we classify each model as:
+          Based on the gap between Belief and Market price, we classify each model's pricing status:
         </p>
 
         <div class="signal-grid">
-          <div class="signal-card buy">
-            <h4>🟢 BUY</h4>
-            <p><strong>Belief > Market</strong><br>Model is undervalued by the market. Good opportunity to buy shares.</p>
+          <div class="signal-card underpriced">
+            <h4>🟢 UNDERPRICED</h4>
+            <p><strong>Belief > Market</strong><br>Model's performance suggests higher value than current market price indicates.</p>
           </div>
           
-          <div class="signal-card overvalued">
-            <h4>🔴 OVERVALUED</h4>
-            <p><strong>Market > Belief</strong><br>Market price is too high compared to performance. Avoid buying or sell if you own shares.</p>
+          <div class="signal-card overpriced">
+            <h4>🔴 OVERPRICED</h4>
+            <p><strong>Market > Belief</strong><br>Market price exceeds what performance data alone would suggest.</p>
           </div>
           
-          <div class="signal-card hold">
-            <h4>⚪ HOLD</h4>
-            <p><strong>Prices aligned</strong><br>Market price fairly reflects model performance. No strong signal either way.</p>
+          <div class="signal-card aligned">
+            <h4>⚪ ALIGNED</h4>
+            <p><strong>Prices match performance</strong><br>Market price closely reflects model's performance relative to competitors.</p>
           </div>
         </div>
       </div>
@@ -482,13 +482,13 @@
           <div class="feature-card">
             <div class="feature-icon">📈</div>
             <h4>Live Market Tracking</h4>
-            <p>Real-time updates every 30 seconds showing current Belief vs Market prices with actionable trading signals.</p>
+            <p>Real-time updates every 30 seconds showing current Belief vs Market prices with performance-price relationship indicators.</p>
           </div>
           
           <div class="feature-card">
             <div class="feature-icon">📊</div>
             <h4>Gap Analysis</h4>
-            <p>Visual breakdown showing exactly where opportunities exist, ranked by the size of the price gap.</p>
+            <p>Visual breakdown showing pricing discrepancies between performance data and market sentiment, ranked by magnitude.</p>
           </div>
           
           <div class="feature-card">
@@ -505,14 +505,14 @@
           
           <div class="feature-card">
             <div class="feature-icon">🎯</div>
-            <h4>Strategy Validation</h4>
-            <p>Backtest our approach on 3 completed markets to see if Belief-based analysis accurately predicts winners.</p>
+            <h4>Historical Validation</h4>
+            <p>Review how our Belief-based analysis aligned with outcomes in 3 completed markets.</p>
           </div>
           
           <div class="feature-card">
             <div class="feature-icon">⚡</div>
             <h4>Auto-Refresh</h4>
-            <p>Dashboard updates automatically as new data comes in, so you never miss an opportunity.</p>
+            <p>Dashboard updates automatically as new data comes in, keeping analysis current.</p>
           </div>
         </div>
       </div>
@@ -539,7 +539,7 @@
 
         <div class="card">
           <h3 style="margin-top:0;">Market Price</h3>
-          <p>The current price traders are willing to pay for shares in each model on Gensyn Delphi. Represents collective market sentiment and expectations.</p>
+          <p>The current price participants are willing to pay for shares in each model on Gensyn Delphi. Represents collective market sentiment and expectations.</p>
         </div>
       </div>
 
@@ -547,30 +547,31 @@
         <h2>⚠️ Important Notes</h2>
         
         <div class="highlight-box">
-          <h4>Analytics Tool</h4>
-          <p>Delphi Beliefs is an analytics tool. Past performance does not guarantee future results.</p>
+          <h4>Analytics Tool Only</h4>
+          <p>Delphi Beliefs is a data visualization and analysis tool. We do not provide trading advice or recommendations. All analysis is for informational and educational purposes only.</p>
         </div>
 
         <ul>
-          <li><strong>Independent Tool:</strong> This is a community-built analytics dashboard.</li>
+          <li><strong>Independent Tool:</strong> This is a community-built analytics dashboard, not affiliated with Gensyn.</li>
           <li><strong>Data Source:</strong> All data comes from publicly available Gensyn Delphi APIs.</li>
           <li><strong>Testnet Product:</strong> Gensyn Delphi is running on testnet. This is for testing and educational purposes.</li>
-          <li><strong>Strategy Limits:</strong> Our approach assumes eval scores predict winners. This may not always hold true.</li>
-          <li><strong>Market Dynamics:</strong> Prices reflect many factors beyond performance: hype, liquidity, timing, trader behavior, etc.</li>
+          <li><strong>Methodology Limits:</strong> Our approach assumes eval scores are the primary predictor of outcomes. This may not always hold true.</li>
+          <li><strong>Market Complexity:</strong> Prices reflect many factors beyond performance: sentiment, liquidity, timing, participant behavior, information asymmetry, etc.</li>
+          <li><strong>No Financial Advice:</strong> Nothing on this site constitutes financial, investment, or trading advice. Users should conduct their own research.</li>
         </ul>
       </div>
 
       <div class="section">
-        <h2>🧪 Strategy Validation</h2>
+        <h2>🧪 Historical Analysis</h2>
         <p>
-          To test whether our Belief-based approach actually works, we backtested it on 3 completed Gensyn markets. Check the <a href="/settled-markets" style="color:var(--blue); text-decoration:none; font-weight:600;">Settled Markets</a> page to see if our methodology successfully predicted the winners.
+          To validate whether our Belief-based methodology correlates with actual outcomes, we analyzed 3 completed Gensyn markets. Check the <a href="/settled-markets" style="color:var(--blue); text-decoration:none; font-weight:600;">Settled Markets</a> page to see how our approach performed historically.
         </p>
       </div>
 
       <div class="cta-box">
-        <h3>Ready to Start Trading Smarter?</h3>
-        <p>See live trading opportunities on the current Gensyn Delphi market</p>
-        <a href="/" class="cta-button">View Live Market →</a>
+        <h3>Explore Live Market Data</h3>
+        <p>See current performance-price relationships on the active Gensyn Delphi market</p>
+        <a href="/" class="cta-button">View Live Dashboard →</a>
       </div>
 
       <div class="section" style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); text-align: center;">
