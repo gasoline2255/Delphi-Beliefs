@@ -385,9 +385,19 @@
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.9375rem;
       color: var(--text);
-      min-width: 60px;
       text-align: left;
+      position: relative;
+      min-width: 120px;
     }
+    .beliefChange{
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: inline-block;
+      margin-left: 0.5rem;
+    }
+    .beliefChange.up{ color: var(--green); }
+    .beliefChange.down{ color: var(--red); }
+    .beliefChange.neutral{ color: var(--muted); }
     .gapRight{
       display: flex;
       align-items: center;
@@ -903,6 +913,18 @@ function extractScore(raw){
   return null;
 }
 
+function extractScoreAtIndex(raw, evalIndex){
+  const arr = raw?.evals;
+  if (!Array.isArray(arr) || evalIndex >= arr.length) return null;
+  const evalItem = arr[evalIndex];
+  const candidates = ["aggregate","avg_score","avgScore","average_score","score","value"];
+  for (const k of candidates){
+    const v = evalItem?.[k];
+    if (typeof v === "number" && Number.isFinite(v)) return v;
+  }
+  return null;
+}
+
 function escapeHtml(s){
   return String(s ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
 }
@@ -1118,14 +1140,40 @@ function renderModels(probs){
 
 let latestMarketPrices = {};
 
-function renderGapAnalysis(beliefProbs){
+function renderGapAnalysis(beliefProbs, raw){
   const hasMarketData = Object.keys(latestMarketPrices).length > 0;
+  
+  // Calculate previous eval beliefs if we have at least 2 evals
+  let previousBeliefProbs = null;
+  const minEvalCount = Math.min(...allEvalHistory.map(h => h.length));
+  
+  if (minEvalCount >= 2) {
+    // Get scores from second-to-last eval for each model
+    const prevScores = raw.slice(0, MODEL_COUNT).map((modelData, idx) => {
+      return extractScoreAtIndex(modelData, allEvalHistory[idx].length - 2);
+    });
+    previousBeliefProbs = normalize(prevScores.map(s => (typeof s === "number" ? s : 0)));
+  }
   
   const rows = modelNames.map((name, i) => {
     const belief = beliefProbs?.[i] ?? 0;
     const market = latestMarketPrices[name] ?? 0;
     const gap = market - belief;
     const gapPct = Math.round(gap * 1000) / 10;
+    
+    // Calculate belief change from previous eval
+    let changeIndicator = '';
+    if (previousBeliefProbs && previousBeliefProbs[i] !== undefined) {
+      const prevBelief = previousBeliefProbs[i];
+      const changePct = Math.round((belief - prevBelief) * 1000) / 10;
+      
+      if (Math.abs(changePct) >= 0.1) {
+        const changeClass = changePct > 0 ? 'up' : 'down';
+        const arrow = changePct > 0 ? '↑' : '↓';
+        const sign = changePct > 0 ? '+' : '';
+        changeIndicator = `<span class="beliefChange ${changeClass}">${arrow}${sign}${changePct}%</span>`;
+      }
+    }
     
     let signal = 'ALIGNED';
     let gapClass = 'neutral';
@@ -1150,7 +1198,7 @@ function renderGapAnalysis(beliefProbs){
     const marketPct = hasMarketData ? `${Math.round(market * 1000) / 10}%` : '—';
     const gapDisplay = hasMarketData ? (gapPct > 0 ? `+${gapPct}%` : `${gapPct}%`) : '—';
     
-    return {name, belief, market, gap: gapPct, signal, gapClass, beliefPct, marketPct, gapDisplay, hasMarketData};
+    return {name, belief, market, gap: gapPct, signal, gapClass, beliefPct, marketPct, gapDisplay, hasMarketData, changeIndicator};
   }).sort((a,b) => b.belief - a.belief);
 
   document.getElementById("gapAnalysisList").innerHTML = rows.map((r, idx) => {
@@ -1176,7 +1224,9 @@ function renderGapAnalysis(beliefProbs){
         <div class="gapMetrics">
           <div class="gapMetricSmall">
             <div class="gapLabel">Belief</div>
-            <div class="gapValue">${r.beliefPct}</div>
+            <div class="gapValue">
+              <span>${r.beliefPct}</span>${r.changeIndicator}
+            </div>
           </div>
           <div class="gapMetricSmall">
             <div class="gapLabel">Market</div>
@@ -1376,7 +1426,7 @@ async function refresh(){
         applyViewMode();
         
         // ⚡ OPTIMIZATION: Render Gap Analysis immediately with belief data
-        renderGapAnalysis(probs);
+        renderGapAnalysis(probs, raw);
         
         const hasMarketData = Object.keys(latestMarketPrices).length > 0;
         const beliefStatusDot = document.getElementById("beliefStatusDot");
@@ -1420,7 +1470,7 @@ async function refresh(){
         if (raw.length) {
           const scores = raw.slice(0, MODEL_COUNT).map(extractScore);
           const probs = normalize(scores.map(s => (typeof s === "number" ? s : 0)));
-          renderGapAnalysis(probs);
+          renderGapAnalysis(probs, raw);
         }
       }
 
