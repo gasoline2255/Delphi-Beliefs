@@ -862,11 +862,11 @@ const MARKET_ID = 4;
 let modelNames = [];
 let MODEL_COUNT = 4;
 let timestamps = [];
-let series = Array.from({ length: MODEL_COUNT }, () => []); // normalized belief %
-let rawScoreSeries = Array.from({ length: MODEL_COUNT }, () => []); // raw eval scores
+let series = Array.from({ length: MODEL_COUNT }, () => []);
+let rawScoreSeries = Array.from({ length: MODEL_COUNT }, () => []);
 let latestEvalScores = Array.from({ length: MODEL_COUNT }, () => []);
 let allEvalHistory = Array.from({ length: MODEL_COUNT }, () => []);
-let lastProcessedEvalCounts = Array.from({ length: MODEL_COUNT }, () => 0); // Track eval count per model
+let lastProcessedEvalCounts = Array.from({ length: MODEL_COUNT }, () => 0);
 let viewMode = "all";
 let activeSingleIndex = 0;
 let chipEnabled = Array.from({ length: MODEL_COUNT }, () => true);
@@ -1009,9 +1009,7 @@ function updateBeliefChartScale() {
   const max = Math.max(...allValues);
   const range = max - min;
   
-  // Always zoom in to show the actual data range with padding
-  // This makes small changes (like 28.5% -> 28.8%) look dramatic
-  const padding = Math.max(range * 0.2, 0.02); // At least 2% padding
+  const padding = Math.max(range * 0.2, 0.02);
   
   beliefChart.options.scales.y.min = Math.max(0, min - padding);
   beliefChart.options.scales.y.max = Math.min(1, max + padding);
@@ -1027,7 +1025,7 @@ function rebuildBeliefDatasets(){
     borderWidth: 2.5,
     pointRadius: (context) => {
       const label = context.chart.data.labels[context.dataIndex];
-      return label && label.startsWith('Eval') ? 4 : 0; // Only show dots on Eval points
+      return label && label.startsWith('Eval') ? 4 : 0;
     },
     pointHoverRadius: 6,
     pointBackgroundColor: colorForModelName(modelNames[i]),
@@ -1143,12 +1141,10 @@ let latestMarketPrices = {};
 function renderGapAnalysis(beliefProbs, raw){
   const hasMarketData = Object.keys(latestMarketPrices).length > 0;
   
-  // Calculate previous eval beliefs if we have at least 2 evals
   let previousBeliefProbs = null;
   const minEvalCount = Math.min(...allEvalHistory.map(h => h.length));
   
   if (minEvalCount >= 2) {
-    // Get scores from second-to-last eval for each model
     const prevScores = raw.slice(0, MODEL_COUNT).map((modelData, idx) => {
       return extractScoreAtIndex(modelData, allEvalHistory[idx].length - 2);
     });
@@ -1161,7 +1157,6 @@ function renderGapAnalysis(beliefProbs, raw){
     const gap = market - belief;
     const gapPct = Math.round(gap * 1000) / 10;
     
-    // Calculate belief change from previous eval
     let changeIndicator = '';
     if (previousBeliefProbs && previousBeliefProbs[i] !== undefined) {
       const prevBelief = previousBeliefProbs[i];
@@ -1306,14 +1301,11 @@ async function refresh(){
         }).filter(v => v !== null);
       });
 
-      // On first load, build complete history
       const currentEvalCounts = allEvalHistory.map(h => h.length);
       const maxEvals = Math.max(...currentEvalCounts);
       
-      // If this is first load (timestamps empty), build all historical points
       if (timestamps.length === 0 && maxEvals > 0) {
         for (let evalNum = 1; evalNum <= maxEvals; evalNum++) {
-          // Get scores for this eval number
           const evalScores = raw.slice(0, MODEL_COUNT).map(modelData => {
             const evals = modelData?.evals;
             if (!Array.isArray(evals) || evalNum > evals.length) return null;
@@ -1330,11 +1322,9 @@ async function refresh(){
           if (hasScores) {
             const probs = normalize(evalScores.map(s => (typeof s === "number" ? s : 0)));
             
-            // Add the main eval point
             timestamps.push(`Eval #${evalNum}`);
             probs.forEach((p, i) => series[i].push(p));
             
-            // If not the last eval, add 2 intermediate points for smooth curve
             if (evalNum < maxEvals) {
               const nextEvalScores = raw.slice(0, MODEL_COUNT).map(modelData => {
                 const evals = modelData?.evals;
@@ -1352,17 +1342,16 @@ async function refresh(){
               if (hasNextScores) {
                 const nextProbs = normalize(nextEvalScores.map(s => (typeof s === "number" ? s : 0)));
                 
-                // Add intermediate points for smooth transition
                 timestamps.push('');
                 probs.forEach((p, i) => {
                   const diff = nextProbs[i] - p;
-                  series[i].push(p + diff * 0.3); // 30% of the way
+                  series[i].push(p + diff * 0.3);
                 });
                 
                 timestamps.push('');
                 probs.forEach((p, i) => {
                   const diff = nextProbs[i] - p;
-                  series[i].push(p + diff * 0.7); // 70% of the way
+                  series[i].push(p + diff * 0.7);
                 });
               }
             }
@@ -1370,7 +1359,6 @@ async function refresh(){
         }
         lastProcessedEvalCounts = [...currentEvalCounts];
       } else {
-        // Check if any model has a new eval since last check
         const hasNewEval = currentEvalCounts.some((count, i) => count > lastProcessedEvalCounts[i]);
         
         if (hasNewEval) {
@@ -1378,7 +1366,6 @@ async function refresh(){
           const probs = normalize(scores.map(s => (typeof s === "number" ? s : 0)));
           const maxEvalCount = Math.max(...currentEvalCounts);
           
-          // Add intermediate transition points before new eval
           if (timestamps.length > 0 && series[0].length > 0) {
             const prevProbs = series.map(s => s[s.length - 1]);
             
@@ -1425,7 +1412,6 @@ async function refresh(){
         renderChips();
         applyViewMode();
         
-        // ⚡ OPTIMIZATION: Render Gap Analysis immediately with belief data
         renderGapAnalysis(probs, raw);
         
         const hasMarketData = Object.keys(latestMarketPrices).length > 0;
@@ -1466,7 +1452,6 @@ async function refresh(){
           }
         });
         
-        // ⚡ OPTIMIZATION: Re-render Gap Analysis with market prices
         if (raw.length) {
           const scores = raw.slice(0, MODEL_COUNT).map(extractScore);
           const probs = normalize(scores.map(s => (typeof s === "number" ? s : 0)));
