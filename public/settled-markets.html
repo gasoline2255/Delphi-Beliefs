@@ -4,11 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Settled Markets - Delphi Beliefs</title>
-  
+
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="shortcut icon" type="image/png" href="/favicon.png">
-  
+
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
   <style>
@@ -24,6 +24,7 @@
       --orange:#FF9D5C;
       --green:#00D89F;
       --red:#FF5C7C;
+      --amber:#FFB84D;
     }
 
     *{ margin:0; padding:0; box-sizing:border-box; }
@@ -196,11 +197,6 @@
       letter-spacing: 0.5px;
       margin-bottom: 0.5rem;
     }
-    .detailValue{
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--text);
-    }
     .rankingTable{
       width: 100%;
       border-collapse: collapse;
@@ -260,7 +256,6 @@
 
     .body{ padding: 1.25rem; }
 
-    /* ✅ MOBILE/TABLET OPTIMIZATION (only) */
     @media (max-width: 1024px){
       .navbar{ padding: 1rem 1.25rem; }
       .nav-left{ gap: 1.25rem; }
@@ -284,7 +279,6 @@
         width: 100%;
       }
 
-      /* tabs become a clean 2-column grid on phones (prevents ugly wrapping) */
       .nav-tabs{
         width: 100%;
         display: grid;
@@ -311,19 +305,16 @@
       .brand h1{ font-size: 1rem; }
       .built-by{ font-size: 0.75rem; }
 
-      /* market cards tighten + ensure content wraps nicely */
       .body{ padding: 1rem; }
       .cardHeader{ padding: 0.875rem 1rem; }
 
       .detailsGrid{ grid-template-columns: 1fr; }
       .rankingTable th, .rankingTable td{ padding: 0.5rem 0.4rem; }
 
-      /* make wide table scrollable on small screens without breaking layout */
       .detailCard table{ display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
       .detailCard table thead, .detailCard table tbody, .detailCard table tr{ display: table; width: 100%; table-layout: fixed; }
       .detailCard table{ width: 100%; }
 
-      /* the two summary boxes inside each market card become stacked */
       .marketCard > div[style*="grid-template-columns: 1fr 1fr"]{
         grid-template-columns: 1fr !important;
       }
@@ -391,14 +382,15 @@
           <div class="statusBadge loading" id="historicalStatus">Loading...</div>
         </div>
         <div class="body">
-          <div style="margin-bottom: 20px; padding: 15px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 3px solid #3B82F6;">
+          <div id="backtestedBox" style="margin-bottom: 20px; padding: 15px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border-left: 3px solid #3B82F6;">
             <h3 style="margin: 0 0 10px 0; color: #3B82F6; font-size: 1.1rem;">
-              🔬 Backtested on 3 Completed Markets
+              🔬 Backtested on 0 Completed Markets
             </h3>
             <p style="margin: 0; color: var(--soft); font-size: 0.875rem; line-height: 1.6;">
               Testing if belief-based gap analysis can predict winners using historical evaluation data from completed Gensyn markets
             </p>
           </div>
+
           <div id="historicalAnalysis">
             <p style="color: var(--soft);">Analyzing completed markets...</p>
           </div>
@@ -412,14 +404,17 @@
     async function loadHistoricalAnalysis() {
       const statusBadge = document.getElementById('historicalStatus');
       const container = document.getElementById('historicalAnalysis');
+      const backtestedBox = document.getElementById('backtestedBox');
 
       try {
         const response = await fetch('/api/historical-analysis');
         const data = await response.json();
 
-        console.log('📊 Historical Analysis Data:', data);
-        console.log('📊 Markets:', data.markets);
+        // Update backtested count dynamically (now should be 4)
+        const totalMarkets = Number(data.totalMarkets || 0);
+        backtestedBox.querySelector('h3').textContent = `🔬 Backtested on ${totalMarkets} Completed Markets`;
 
+        // Win rate badge
         if (data.winRate >= 66) {
           statusBadge.textContent = `${data.winRate.toFixed(0)}% Win Rate`;
           statusBadge.className = 'statusBadge success';
@@ -444,7 +439,9 @@
           <div style="display: grid; gap: 15px;">
         `;
 
-        data.markets.forEach((market, idx) => {
+        const markets = Array.isArray(data.markets) ? data.markets : [];
+
+        markets.forEach((market, idx) => {
           if (market.error) {
             html += `
               <div style="padding: 15px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; border-left: 3px solid var(--red);">
@@ -482,12 +479,12 @@
                 <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
                   <div style="color: var(--muted); margin-bottom: 4px;">Belief Prediction:</div>
                   <div style="color: var(--text); font-weight: 600; margin-bottom: 4px; word-break: break-word;">${market.predictedWinner}</div>
-                  <div style="color: var(--green); font-weight: 500;">${market.beliefScore.toFixed(1)}% confidence</div>
+                  <div style="color: var(--green); font-weight: 500;">${Number(market.beliefScore || 0).toFixed(1)}% confidence</div>
                 </div>
                 <div style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
                   <div style="color: var(--muted); margin-bottom: 4px;">Actual Winner:</div>
                   <div style="color: var(--text); font-weight: 600; word-break: break-word;">${market.actualWinner}</div>
-                  <div style="color: ${color}; font-weight: 500; margin-top: 4px;">
+                  <div style="color: ${color}; font-weight: 600; margin-top: 4px;">
                     ${market.correct ? 'Prediction Correct ✓' : 'Prediction Incorrect ✗'}
                   </div>
                 </div>
@@ -509,7 +506,7 @@
                         ${market.rankings && market.rankings.length > 0 ? market.rankings.map((r, i) => `
                           <tr>
                             <td style="font-weight: ${i === 0 ? '700' : '400'}; color: ${i === 0 ? 'var(--green)' : 'var(--text)'}; word-break: break-word;">${r.model}</td>
-                            <td style="font-family: 'JetBrains Mono', monospace;">${r.avgScore.toFixed(2)}</td>
+                            <td style="font-family: 'JetBrains Mono', monospace;">${Number(r.avgScore || 0).toFixed(2)}</td>
                             <td>#${i + 1}</td>
                           </tr>
                         `).join('') : '<tr><td colspan="3" style="text-align: center; color: var(--muted); padding: 1rem;">No ranking data available</td></tr>'}
@@ -522,7 +519,7 @@
                     <div style="color: var(--soft); font-size: 0.875rem; margin-top: 0.5rem;">
                       <div style="margin-bottom: 0.5rem;">Total Evaluations: <strong style="color: var(--text);">${market.evalCount}</strong></div>
                       <div style="margin-bottom: 0.5rem;">Prediction Method: <strong style="color: var(--text);">Normalized Scores</strong></div>
-                      <div>Winner Confidence: <strong style="color: var(--green);">${market.beliefScore.toFixed(1)}%</strong></div>
+                      <div>Winner Confidence: <strong style="color: var(--green);">${Number(market.beliefScore || 0).toFixed(1)}%</strong></div>
                     </div>
                   </div>
 
@@ -531,7 +528,7 @@
                     <div style="color: var(--soft); font-size: 0.875rem; margin-top: 0.5rem;">
                       <div style="margin-bottom: 0.5rem;">Predicted: <strong style="color: var(--text); word-break: break-word;">${market.predictedWinner}</strong></div>
                       <div style="margin-bottom: 0.5rem;">Actual: <strong style="color: var(--text); word-break: break-word;">${market.actualWinner}</strong></div>
-                      <div style="color: ${color}; font-weight: 600;">${market.correct ? '✓ Correct Prediction' : '✗ Incorrect Prediction'}</div>
+                      <div style="color: ${color}; font-weight: 700;">${market.correct ? '✓ Correct Prediction' : '✗ Incorrect Prediction'}</div>
                     </div>
                   </div>
                 </div>
@@ -556,6 +553,7 @@
     function toggleMarket(idx) {
       const content = document.getElementById(`content-${idx}`);
       const icon = document.getElementById(`expand-${idx}`);
+      if (!content || !icon) return;
 
       if (content.classList.contains('open')) {
         content.classList.remove('open');
