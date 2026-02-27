@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Live Market - Delphi Beliefs</title>
 
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="shortcut icon" type="image/png" href="/favicon.png">
 
@@ -19,11 +18,13 @@
       --border: rgba(255,255,255,0.1);
       --text:#E8EDF5; --soft:#A0AAC0; --muted:#6B7588;
       --blue:#5B9FFF; --orange:#FF9D5C; --green:#00D89F; --red:#FF5C7C;
+      --yellow:#FFB84D;
     }
     *{ margin:0; padding:0; box-sizing:border-box; }
     body{ margin:0; font-family: Inter, -apple-system, sans-serif; color: var(--text); background: var(--bg0); min-height: 100vh; }
     .wrap{ max-width: 1280px; margin: 0 auto; padding: 0; }
 
+    /* ─── Navbar ─────────────────────────────────────────────────────────── */
     .navbar{
       display:flex; justify-content:space-between; align-items:center;
       padding: 1.25rem 2rem; border-bottom: 1px solid var(--border);
@@ -42,7 +43,6 @@
     .nav-tab:hover{ color: var(--text); background: rgba(255,255,255,0.05); }
     .nav-tab.active{ color: var(--text); background: rgba(255,255,255,0.08); }
     .nav-tab svg{ width: 14px; height: 14px; }
-
     .nav-right{ display: flex; align-items: center; gap: 1.5rem; flex-shrink: 0; }
     .built-by{ color: var(--muted); font-size: 0.875rem; white-space: nowrap; }
     .built-by a{ color: var(--text); text-decoration: none; font-weight: 600; }
@@ -55,194 +55,182 @@
     }
     .social-link:hover{ border-color: var(--blue); color: var(--blue); background: rgba(91,159,255,0.1); }
 
+    /* ─── Status pill ─────────────────────────────────────────────────────── */
     .topbar{ display:flex; justify-content:space-between; align-items:flex-end; margin-bottom: 1.5rem; gap: 1rem; }
     .statusPill{
       display:flex; align-items:center; gap: 0.625rem;
       padding: 0.625rem 1rem; border-radius: 999px; border: 1px solid var(--border);
       background: var(--card); color: var(--soft); font-size: 0.875rem; font-weight: 600;
+      transition: all 0.5s ease;
     }
-    .dot{ width:8px; height:8px; border-radius:50%; background: var(--green); box-shadow: 0 0 12px var(--green); }
+    .statusPill.is-settled{
+      border-color: rgba(0,216,159,0.35);
+      background: rgba(0,216,159,0.08);
+      color: var(--green);
+    }
+    .dot{
+      width:8px; height:8px; border-radius:50%;
+      background: var(--green); box-shadow: 0 0 12px var(--green);
+      transition: all 0.5s;
+    }
+    .dot.pulse{ animation: pulse 2s infinite; }
+    @keyframes pulse{
+      0%,100%{ opacity:1; box-shadow:0 0 12px var(--green); }
+      50%{ opacity:0.5; box-shadow:0 0 4px var(--green); }
+    }
+    .dot.settled{ background: var(--green); box-shadow: none; animation: none; }
 
+    /* ─── Settled banner ──────────────────────────────────────────────────── */
+    .settledBanner{
+      display: none;
+      align-items: center; gap: 1.25rem; flex-wrap: wrap;
+      padding: 1.25rem 1.5rem; border-radius: 16px; margin-bottom: 1.5rem;
+      border: 1px solid rgba(0,216,159,0.25);
+      background: linear-gradient(135deg, rgba(0,216,159,0.07) 0%, rgba(0,216,159,0.03) 100%);
+    }
+    .settledBanner.visible{ display: flex; }
+    .settledBannerIcon{ font-size: 2rem; line-height: 1; flex-shrink: 0; }
+    .settledBannerBody{ flex: 1; min-width: 0; }
+    .settledBannerTitle{ font-size: 1rem; font-weight: 800; color: var(--green); margin-bottom: 0.3rem; }
+    .settledBannerSub{ font-size: 0.8125rem; color: var(--soft); line-height: 1.5; }
+    .settledWinnerChip{
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.6rem 1.1rem; border-radius: 999px; flex-shrink: 0;
+      background: rgba(0,216,159,0.15); border: 1px solid rgba(0,216,159,0.35);
+      color: var(--green); font-weight: 800; font-size: 0.875rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ─── Cards ───────────────────────────────────────────────────────────── */
     .stats{ display:grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
     @media (max-width: 980px){ .stats{ grid-template-columns: repeat(2, 1fr); } }
-
-    .card{ border: 1px solid var(--border); border-radius: 16px; background: var(--card); overflow:hidden; }
+    .card{
+      border: 1px solid var(--border); border-radius: 16px;
+      background: var(--card); overflow:hidden;
+      transition: border-color 0.5s, background 0.5s;
+    }
+    .card.settled-tint{
+      border-color: rgba(0,216,159,0.18);
+      background: rgba(0,216,159,0.03);
+    }
     .cardInner{ padding: 1.25rem; }
     .k{ color: var(--muted); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
     .v{ margin-top: 0.5rem; font-size: 1.125rem; font-weight: 700; line-height: 1.4; min-height: 1.6rem; }
     .splitRow{ display:flex; justify-content:space-between; margin-top: 0.625rem; font-size: 0.8125rem; }
     .subV{ color: var(--soft); }
     .subRight{ color: var(--muted); font-family: 'JetBrains Mono', monospace; }
-
     .grid{ display:grid; grid-template-columns: 1.6fr 1fr; gap: 1.5rem; }
     @media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
-
     .cardHeader{
       display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;
       padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
       background: rgba(255,255,255,0.02); gap: 1rem;
     }
     .cardTitle{ font-weight: 700; font-size: 0.875rem; }
-
     button{
       font-family: Inter; font-size: 0.8125rem; font-weight: 700; color: var(--text);
       background: rgba(255,255,255,0.06); border: 1px solid var(--border);
       border-radius: 10px; padding: 0.5rem 1rem; cursor:pointer; transition: all 0.2s;
     }
     button:hover{ background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.15); }
-
     .body{ padding: 1.25rem; }
 
+    /* ─── Chart ───────────────────────────────────────────────────────────── */
     .chartShell{ border: 1px solid var(--border); border-radius: 12px; background: rgba(255,255,255,0.02); padding: 0.875rem; }
     .chartShell canvas{ width:100% !important; height: 360px !important; display:block; }
     #delphiChartCanvas{ height: 420px !important; }
-
     .foot{ margin-top: 0.75rem; display:flex; justify-content:space-between; color: var(--muted); font-size: 0.75rem; }
-    .mono{ font-family: 'JetBrains Mono', monospace; }
 
-    .modelsList{ display:flex; flex-direction:column; gap:0.75rem; }
-
-    /* ===== Models ranking (UI upgrade only) ===== */
-    .modelRow{
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 0.9rem;
-      padding: 1rem 1.05rem;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.02));
-    }
-    .mLeft{
-      display: flex;
-      gap: 0.9rem;
-      min-width: 0;
-      align-items: flex-start;
-    }
-    .badge{
-      width: 34px; height: 34px;
-      border-radius: 12px;
-      display:flex; align-items:center; justify-content:center;
-      font-weight: 900;
-      font-size: 0.75rem;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid var(--border);
-      font-family: 'JetBrains Mono', monospace;
-      flex: 0 0 auto;
-    }
-    .mMain{ min-width:0; flex: 1; }
-    .mTop{
-      display:flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 0.75rem;
-    }
-    .mName{
-      font-weight: 800;
-      font-size: 0.95rem;
-      letter-spacing: -0.01em;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .mMeta{
-      margin-top: 0.25rem;
-      display:flex;
-      gap: 0.75rem;
-      align-items:center;
-      flex-wrap: wrap;
-    }
-    .mEval{
-      color: var(--soft);
-      font-size: 0.76rem;
-      font-family: 'JetBrains Mono', monospace;
-      margin-top: 0; /* override old */
-    }
-    .mSub{
-      color: var(--muted);
-      font-size: 0.72rem;
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .pct{
-      align-self: center;
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 900;
-      font-size: 0.82rem;
-      padding: 0.45rem 0.65rem;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.035);
-      min-width: 64px;
-      text-align: center;
-    }
-
-    /* eval history horizontal scroll (keep scroll visible) */
-    .evalHistory{
-      margin-top: 0.7rem;
-      padding-top: 0.7rem;
-      border-top: 1px solid rgba(255,255,255,0.07);
-
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: nowrap;
-
-      overflow-x: auto;
-      overflow-y: hidden;
-
-      -webkit-overflow-scrolling: touch;
-
-      padding-bottom: 6px;
-
-      scrollbar-width: thin;
-      scrollbar-color: rgba(255,255,255,0.25) transparent;
-    }
-    .evalHistory::-webkit-scrollbar{ height: 6px; }
-    .evalHistory::-webkit-scrollbar-track{ background: transparent; }
-    .evalHistory::-webkit-scrollbar-thumb{
-      background: rgba(255,255,255,0.22);
-      border-radius: 999px;
-    }
-    .evalHistory::-webkit-scrollbar-thumb:hover{
-      background: rgba(255,255,255,0.35);
-    }
-
-    .evalBadge{
-      display: inline-flex;
-      align-items: center;
-
-      padding: 0.26rem 0.55rem;
-      border-radius: 999px;
-      font-size: 0.68rem;
-      font-family: 'JetBrains Mono', monospace;
-
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.09);
-      color: var(--soft);
-
-      flex: 0 0 auto;
-      white-space: nowrap;
-    }
-    .evalBadge.latest{
-      background: rgba(0,216,159,0.10);
-      border-color: rgba(0,216,159,0.28);
-      color: var(--green);
-      font-weight: 700;
-    }
-
+    /* ─── Hint pills ──────────────────────────────────────────────────────── */
     .hintPill{
       display:flex; align-items:center; gap:0.625rem;
       padding: 0.5rem 0.875rem; border-radius: 999px; border: 1px solid var(--border);
       background: var(--card); color: var(--soft); font-size: 0.8125rem;
+      transition: all 0.5s ease;
+    }
+    .hintPill.is-settled{
+      border-color: rgba(0,216,159,0.3);
+      background: rgba(0,216,159,0.08);
+      color: var(--green);
+    }
+    .miniMetaPill{
+      display:flex; align-items:center; gap:0.625rem;
+      padding: 0.5rem 0.875rem; border-radius: 999px; border: 1px solid var(--border);
+      background: var(--card); color: var(--muted); font-size: 0.75rem;
+      font-family: 'JetBrains Mono', monospace; transition: all 0.5s;
+    }
+    .miniMetaPill.is-settled{
+      border-color: rgba(0,216,159,0.3);
+      background: rgba(0,216,159,0.08);
+      color: var(--green);
+    }
+    .miniDot{ width:6px; height:6px; border-radius:50%; transition: all 0.5s; }
+
+    /* ─── Models ranking ──────────────────────────────────────────────────── */
+    .modelsList{ display:flex; flex-direction:column; gap:0.75rem; }
+    .modelRow{
+      display: grid; grid-template-columns: 1fr auto; gap: 0.9rem;
+      padding: 1rem 1.05rem; border-radius: 14px; border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.02));
+      transition: border-color 0.4s, background 0.4s;
+    }
+    .modelRow.is-winner{
+      border-color: rgba(0,216,159,0.35);
+      background: linear-gradient(180deg, rgba(0,216,159,0.07), rgba(0,216,159,0.02));
+    }
+    .mLeft{ display: flex; gap: 0.9rem; min-width: 0; align-items: flex-start; }
+    .badge{
+      width: 34px; height: 34px; border-radius: 12px;
+      display:flex; align-items:center; justify-content:center;
+      font-weight: 900; font-size: 0.75rem;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      font-family: 'JetBrains Mono', monospace; flex: 0 0 auto;
+    }
+    .mMain{ min-width:0; flex: 1; }
+    .mTop{ display:flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
+    .mName{ font-weight: 800; font-size: 0.95rem; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mMeta{ margin-top: 0.25rem; display:flex; gap: 0.75rem; align-items:center; flex-wrap: wrap; }
+    .mEval{ color: var(--soft); font-size: 0.76rem; font-family: 'JetBrains Mono', monospace; }
+    .winnerTag{
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.2rem 0.6rem; border-radius: 999px;
+      background: rgba(0,216,159,0.15); border: 1px solid rgba(0,216,159,0.3);
+      color: var(--green); font-size: 0.68rem; font-weight: 700; white-space: nowrap;
+    }
+    .pct{
+      align-self: center; font-family: 'JetBrains Mono', monospace; font-weight: 900;
+      font-size: 0.82rem; padding: 0.45rem 0.65rem; border-radius: 999px;
+      border: 1px solid var(--border); background: rgba(255,255,255,0.035);
+      min-width: 64px; text-align: center;
+    }
+    .evalHistory{
+      margin-top: 0.7rem; padding-top: 0.7rem; border-top: 1px solid rgba(255,255,255,0.07);
+      display: flex; gap: 0.5rem; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
+      -webkit-overflow-scrolling: touch; padding-bottom: 6px;
+      scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.25) transparent;
+    }
+    .evalHistory::-webkit-scrollbar{ height: 6px; }
+    .evalHistory::-webkit-scrollbar-track{ background: transparent; }
+    .evalHistory::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.22); border-radius: 999px; }
+    .evalBadge{
+      display: inline-flex; align-items: center; padding: 0.26rem 0.55rem; border-radius: 999px;
+      font-size: 0.68rem; font-family: 'JetBrains Mono', monospace;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);
+      color: var(--soft); flex: 0 0 auto; white-space: nowrap;
+    }
+    .evalBadge.latest{
+      background: rgba(0,216,159,0.10); border-color: rgba(0,216,159,0.28);
+      color: var(--green); font-weight: 700;
     }
 
+    /* ─── Belief chart controls ───────────────────────────────────────────── */
     .chartHeaderRight{ display:flex; align-items:center; gap: 1rem; flex-wrap: wrap; }
     .seg{ display:flex; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px; padding: 0.25rem; gap: 0.25rem; }
     .segBtn{ border: 0; background: transparent; color: var(--soft); font-weight: 700; font-size: 0.8125rem; padding: 0.5rem 0.875rem; border-radius: 8px; cursor:pointer; transition: all 0.2s; }
     .segBtn.active{ background: rgba(255,255,255,0.1); color: var(--text); }
-
     .topBelief{ display:flex; flex-direction:column; align-items:flex-end; padding-left: 1rem; border-left: 1px solid var(--border); }
     .tbLabel{ font-size: 0.6875rem; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
-    .tbValue{ margin-top: 0.125rem; font-family: 'JetBrains Mono'; font-size: 1rem; font-weight: 900; color: #FFB84D; }
-
+    .tbValue{ margin-top: 0.125rem; font-family: 'JetBrains Mono'; font-size: 1rem; font-weight: 900; color: var(--yellow); }
     .chipsWrap{ display:flex; flex-wrap: wrap; gap: 0.625rem; padding: 0.875rem 1.25rem 0; }
     .chip{
       display:inline-flex; align-items:center; gap: 0.5rem;
@@ -253,30 +241,25 @@
     .chip:hover{ border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); }
     .chip.off{ opacity: 0.5; }
     .swatch{ width: 10px; height: 10px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.2); }
-
     .fullRow{ margin-top: 1.5rem; }
 
-    /* Gap Analysis */
+    /* ─── Gap Analysis ────────────────────────────────────────────────────── */
     .gapAnalysisList{ display: flex; flex-direction: column; gap: 0.75rem; }
     .gapCard{
       display: flex; justify-content: space-between; align-items: center;
       padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid var(--border);
       background: rgba(255,255,255,0.03); gap: 1rem;
     }
+    .gapCard.is-winner{ border-color: rgba(0,216,159,0.25); background: rgba(0,216,159,0.04); }
     .gapLeft{ display: flex; align-items: center; gap: 1rem; min-width: 0; flex: 1; }
     .gapModelName{ font-weight: 700; font-size: 0.9375rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .gapMetrics{ display: flex; gap: 2rem; align-items: center; }
     .gapMetricSmall{ display: flex; flex-direction: column; gap: 0.25rem; align-items: flex-start; }
     .gapLabel{ font-size: 0.6875rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
-    .gapValue{
-      font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 0.9375rem;
-      color: var(--text); text-align: left; position: relative; min-width: 120px;
-    }
+    .gapValue{ font-weight: 700; font-family: 'JetBrains Mono', monospace; font-size: 0.9375rem; color: var(--text); min-width: 120px; }
     .beliefChange{ font-size: 0.75rem; font-weight: 600; display: inline-block; margin-left: 0.5rem; }
     .beliefChange.up{ color: var(--green); }
     .beliefChange.down{ color: var(--red); }
-    .beliefChange.neutral{ color: var(--muted); }
-
     .gapRight{ display: flex; align-items: center; gap: 1rem; margin-left: 3rem; }
     .gapDiffBadge{
       padding: 0.5rem 0.875rem; border-radius: 999px;
@@ -286,7 +269,6 @@
     .gapDiffBadge.overvalued{ background: rgba(255,92,124,0.15); color: var(--red); border: 1px solid rgba(255,92,124,0.3); }
     .gapDiffBadge.undervalued{ background: rgba(0,216,159,0.15); color: var(--green); border: 1px solid rgba(0,216,159,0.3); }
     .gapDiffBadge.neutral{ background: rgba(160,170,192,0.15); color: var(--soft); border: 1px solid rgba(160,170,192,0.3); }
-
     .gapSignalBadge{
       padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.8125rem; font-weight: 800;
       text-transform: uppercase; letter-spacing: 0.5px; min-width: 130px; text-align: center;
@@ -294,10 +276,9 @@
     .gapSignalBadge.overpriced{ background: rgba(255,92,124,0.2); color: var(--red); }
     .gapSignalBadge.underpriced{ background: rgba(0,216,159,0.2); color: var(--green); }
     .gapSignalBadge.aligned{ background: rgba(160,170,192,0.2); color: var(--soft); }
-    .gapSignalBadge.loading{ background: rgba(255,184,77,0.2); color: #FFB84D; display: flex; align-items: center; gap: 0.5rem; justify-content: center; }
-
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
+    .gapSignalBadge.final-winner{ background: rgba(0,216,159,0.2); color: var(--green); border: 1px solid rgba(0,216,159,0.35); }
+    .gapSignalBadge.final-result{ background: rgba(160,170,192,0.12); color: var(--soft); border: 1px solid rgba(160,170,192,0.2); }
+    .gapSignalBadge.loading{ background: rgba(255,184,77,0.2); color: var(--yellow); display: flex; align-items: center; gap: 0.5rem; justify-content: center; }
     .gapExplanation{
       margin-top: 1rem; padding: 1.25rem; border-top: 1px solid var(--border);
       display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;
@@ -305,71 +286,74 @@
     .gapExplainItem{ display: flex; gap: 0.75rem; align-items: flex-start; }
     .gapExplainIcon{ font-size: 1.125rem; line-height: 1; margin-top: 0.125rem; }
     .gapExplainContent{ flex: 1; }
-    .gapExplainTitle{ font-size: 0.8125rem; font-weight: 700; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem; }
+    .gapExplainTitle{ font-size: 0.8125rem; font-weight: 700; margin-bottom: 0.25rem; }
     .gapExplainTitle.underpriced{ color: var(--green); }
     .gapExplainTitle.overpriced{ color: var(--red); }
     .gapExplainTitle.aligned{ color: var(--soft); }
     .gapExplainDesc{ font-size: 0.75rem; color: var(--muted); line-height: 1.5; }
     .gapExplainFormula{ font-size: 0.6875rem; color: var(--soft); font-family: 'JetBrains Mono', monospace; margin-top: 0.25rem; }
 
-    .miniMetaPill{
-      display:flex; align-items:center; gap:0.625rem;
-      padding: 0.5rem 0.875rem; border-radius: 999px; border: 1px solid var(--border);
-      background: var(--card); color: var(--muted); font-size: 0.75rem; font-family: 'JetBrains Mono', monospace;
+    /* ─── Coming Soon card ────────────────────────────────────────────────── */
+    .comingSoon{
+      display: none;
+      margin-top: 1.5rem; padding: 2.5rem 2rem; border-radius: 16px; text-align: center;
+      border: 1px dashed rgba(255,184,77,0.3);
+      background: linear-gradient(135deg, rgba(255,184,77,0.06), rgba(255,184,77,0.02));
+      position: relative; overflow: hidden;
     }
-    .miniDot{ width:6px; height:6px; border-radius:50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .comingSoon::before{
+      content:''; position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse at 50% -10%, rgba(255,184,77,0.12) 0%, transparent 65%);
+    }
+    .comingSoon.visible{ display: block; }
+    .csIcon{
+      width: 52px; height: 52px; border-radius: 50%; margin: 0 auto 1rem;
+      display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+      background: rgba(255,184,77,0.12); border: 1px solid rgba(255,184,77,0.25);
+      animation: csPulse 2.8s ease-in-out infinite;
+    }
+    @keyframes csPulse{ 0%,100%{ transform:scale(1); opacity:1; } 50%{ transform:scale(1.07); opacity:0.75; } }
+    .csTitle{ font-size: 1.125rem; font-weight: 800; color: var(--yellow); margin-bottom: 0.5rem; }
+    .csDesc{
+      font-size: 0.875rem; color: var(--soft); line-height: 1.65;
+      max-width: 500px; margin: 0 auto 1.5rem;
+    }
+    .csDesc a{ color: var(--yellow); text-decoration: none; font-weight: 600; }
+    .csDesc a:hover{ text-decoration: underline; }
+    .csDots{ display: flex; gap: 0.5rem; justify-content: center; }
+    .csDot{
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(255,184,77,0.25);
+    }
+    .csDot:nth-child(1){ animation: dotPop 1.5s 0.0s ease-in-out infinite; }
+    .csDot:nth-child(2){ animation: dotPop 1.5s 0.2s ease-in-out infinite; }
+    .csDot:nth-child(3){ animation: dotPop 1.5s 0.4s ease-in-out infinite; }
+    @keyframes dotPop{ 0%,100%{ transform:scale(1); background:rgba(255,184,77,0.25); } 50%{ transform:scale(1.5); background:rgba(255,184,77,0.8); } }
 
-    /* Mobile */
-    @media (max-width: 1024px){
-      .navbar{ padding: 1rem 1.25rem; }
-      .nav-left{ gap: 1.25rem; }
-      .nav-tabs{ flex-wrap: wrap; }
-    }
+    /* ─── Animations ──────────────────────────────────────────────────────── */
+    @keyframes spin{ from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+    /* ─── Mobile ──────────────────────────────────────────────────────────── */
+    @media (max-width: 1024px){ .navbar{ padding: 1rem 1.25rem; } .nav-left{ gap: 1.25rem; } .nav-tabs{ flex-wrap: wrap; } }
     @media (max-width: 768px){
       .navbar{ flex-direction: column; align-items: flex-start; gap: 0.75rem; padding: 0.9rem 1rem; }
       .nav-left{ flex-direction: column; align-items: flex-start; gap: 0.75rem; width: 100%; }
-      .brand{ margin-left: 0; }
-      .brand h1{ font-size: 1.05rem; }
-      .brand-subtitle{ font-size: 0.62rem; letter-spacing: 1.2px; }
-
-      .nav-tabs{ width: 100%; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 0.5rem; padding-bottom: 0.25rem; }
+      .brand{ margin-left: 0; } .brand h1{ font-size: 1.05rem; } .brand-subtitle{ font-size: 0.62rem; }
+      .nav-tabs{ width: 100%; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 0.5rem; padding-bottom: 0.25rem; scrollbar-width: none; }
       .nav-tabs::-webkit-scrollbar{ height: 0; }
-      .nav-tabs{ scrollbar-width: none; }
-      .nav-tab{ flex: 0 0 auto; white-space: nowrap; justify-content: center; padding: 0.45rem 0.7rem; font-size: 0.82rem; border-radius: 10px; }
-
-      .nav-right{ width: 100%; flex-direction: row; align-items: center; justify-content: space-between; gap: 0.75rem; }
-      .built-by{ font-size: 0.78rem; white-space: nowrap; }
-      .social-links{ gap: 0.5rem; }
-      .social-link{ width: 34px; height: 34px; border-radius: 10px; }
-
+      .nav-tab{ flex: 0 0 auto; white-space: nowrap; padding: 0.45rem 0.7rem; font-size: 0.82rem; }
+      .nav-right{ width: 100%; flex-direction: row; align-items: center; justify-content: space-between; }
       .wrap > div{ padding: 1rem !important; }
-      .topbar{ align-items: flex-start; margin-bottom: 1rem; }
       .stats{ grid-template-columns: 1fr; gap: 0.75rem; }
       .grid{ grid-template-columns: 1fr; gap: 1rem; }
-      .cardHeader{ padding: 0.875rem 1rem; }
-      .body{ padding: 1rem; }
-      .cardInner{ padding: 1rem; }
-      .chipsWrap{ padding: 0.75rem 1rem 0; gap: 0.5rem; }
-      .chip{ padding: 0.45rem 0.65rem; font-size: 0.75rem; }
       .chartShell canvas{ height: 240px !important; }
       #delphiChartCanvas{ height: 280px !important; }
-
-      .gapCard{ flex-direction: column; align-items: stretch; gap: 0.75rem; padding: 0.875rem 1rem; }
-      .gapMetrics{ width: 100%; justify-content: space-between; gap: 1rem; }
+      .gapCard{ flex-direction: column; align-items: stretch; gap: 0.75rem; }
+      .gapMetrics{ width: 100%; justify-content: space-between; }
       .gapRight{ width: 100%; margin-left: 0; justify-content: space-between; }
-      .gapSignalBadge{ min-width: auto; flex: 1; text-align: center; }
-      .gapDiffBadge{ min-width: auto; }
-      .gapExplanation{ grid-template-columns: 1fr; gap: 0.875rem; padding: 1rem; }
-
-      .modelRow{ padding: 0.9rem; }
-      .mName{ font-size: 0.9rem; }
-      .pct{ font-size: 0.8rem; min-width: 60px; }
-      .evalHistory{ margin-top: 0.55rem; padding-top: 0.55rem; }
-      .evalBadge{ font-size: 0.66rem; }
+      .settledBanner{ flex-direction: column; }
     }
-    @media (max-width: 420px){
-      .statusPill{ width: 100%; justify-content: center; }
-    }
+    @media (max-width: 420px){ .statusPill{ width:100%; justify-content:center; } }
   </style>
 </head>
 
@@ -380,7 +364,6 @@
         <h1>Delphi Beliefs</h1>
         <div class="brand-subtitle">Gensyn Testnet</div>
       </div>
-
       <div class="nav-tabs">
         <a href="/" class="nav-tab active">Live Market</a>
         <a href="/settled-markets" class="nav-tab">Settled Markets</a>
@@ -395,11 +378,8 @@
         </a>
       </div>
     </div>
-
     <div class="nav-right">
-      <div class="built-by">
-        Built by <a href="https://github.com/gasoline2255" target="_blank" rel="noopener">gasoline</a>
-      </div>
+      <div class="built-by">Built by <a href="https://github.com/gasoline2255" target="_blank" rel="noopener">gasoline</a></div>
       <div class="social-links">
         <a href="https://github.com/gasoline2255" target="_blank" rel="noopener" class="social-link" title="GitHub">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -417,25 +397,39 @@
 
   <div class="wrap">
     <div style="padding: 2rem;">
+
+      <!-- Top status bar -->
       <div class="topbar">
-        <div class="statusPill">
-          <span class="dot" id="statusDot"></span>
-          <span id="statusText">Live</span>
+        <div class="statusPill" id="mainPill">
+          <span class="dot pulse" id="mainDot"></span>
+          <span id="mainPillText">Live</span>
         </div>
       </div>
 
+      <!-- Settled banner (hidden until status=closed detected) -->
+      <div class="settledBanner" id="settledBanner">
+        <div class="settledBannerIcon">🏆</div>
+        <div class="settledBannerBody">
+          <div class="settledBannerTitle">Market Settled — Final Results</div>
+          <div class="settledBannerSub" id="settledBannerSub">
+            This market has concluded. Data shown below reflects the final evaluation scores.
+          </div>
+        </div>
+        <div class="settledWinnerChip" id="settledWinnerChip" style="display:none;">
+          🏆 <span id="settledWinnerName">—</span>
+        </div>
+      </div>
+
+      <!-- Stat cards -->
       <div class="stats">
-        <div class="card">
+        <div class="card" id="sc0">
           <div class="cardInner">
             <div class="k">Market</div>
             <div class="v" id="marketName">—</div>
-            <div class="splitRow">
-              <div class="subV" id="marketNumber">Market #—</div>
-            </div>
+            <div class="splitRow"><div class="subV" id="marketNumber">Market #—</div></div>
           </div>
         </div>
-
-        <div class="card">
+        <div class="card" id="sc1">
           <div class="cardInner">
             <div class="k">Status</div>
             <div class="v" id="marketStatus">—</div>
@@ -445,8 +439,7 @@
             </div>
           </div>
         </div>
-
-        <div class="card">
+        <div class="card" id="sc2">
           <div class="cardInner">
             <div class="k">Last update</div>
             <div class="v" id="lastUpdate">—</div>
@@ -456,8 +449,7 @@
             </div>
           </div>
         </div>
-
-        <div class="card">
+        <div class="card" id="sc3">
           <div class="cardInner">
             <div class="k">Models</div>
             <div class="v" id="modelsCount">—</div>
@@ -469,19 +461,18 @@
         </div>
       </div>
 
-      <!-- Gap Analysis Panel -->
+      <!-- Gap Analysis -->
       <div class="card" style="margin-bottom: 1.5rem;">
         <div class="cardHeader">
           <div class="cardTitle">Gap Analysis (Belief vs Market)</div>
-          <div class="hintPill" id="gapStatusPill">
-            <span class="dot" style="width:6px;height:6px;background:#FFB84D;box-shadow:0 0 8px #FFB84D;" id="gapStatusDot"></span>
-            <span id="gapStatusText">Loading...</span>
+          <div class="hintPill" id="gapPill">
+            <span class="dot miniDot" style="background:#FFB84D;box-shadow:0 0 8px #FFB84D;" id="gapDot"></span>
+            <span id="gapPillText">Loading...</span>
           </div>
         </div>
         <div class="body">
           <div id="gapAnalysisList"></div>
-
-          <div class="gapExplanation">
+          <div class="gapExplanation" id="gapExplanation">
             <div class="gapExplainItem">
               <div class="gapExplainIcon">🟢</div>
               <div class="gapExplainContent">
@@ -490,7 +481,6 @@
                 <div class="gapExplainDesc">Model's performance suggests higher value than current market price indicates.</div>
               </div>
             </div>
-
             <div class="gapExplainItem">
               <div class="gapExplainIcon">🔴</div>
               <div class="gapExplainContent">
@@ -499,7 +489,6 @@
                 <div class="gapExplainDesc">Market price exceeds what performance data alone would suggest.</div>
               </div>
             </div>
-
             <div class="gapExplainItem">
               <div class="gapExplainIcon">⚪</div>
               <div class="gapExplainContent">
@@ -509,11 +498,11 @@
               </div>
             </div>
           </div>
-
         </div>
       </div>
 
       <div class="grid">
+        <!-- Belief chart -->
         <div class="card">
           <div class="cardHeader">
             <div class="cardTitle">Belief chart</div>
@@ -528,34 +517,29 @@
               </div>
             </div>
           </div>
-
           <div class="chipsWrap" id="chipsWrap"></div>
-
           <div class="body">
-            <div class="chartShell">
-              <canvas id="beliefChart"></canvas>
-            </div>
-
+            <div class="chartShell"><canvas id="beliefChart"></canvas></div>
             <div class="foot">
               <div>Y-axis normalized belief (0 → 1)</div>
-              <div class="miniMetaPill" id="beliefStatusPill">
-                <span class="miniDot" id="beliefStatusDot" style="background:#FFB84D;box-shadow:0 0 8px #FFB84D;"></span>
-                <span id="beliefStatusText">Loading...</span>
+              <div class="miniMetaPill" id="beliefPill">
+                <span class="miniDot" id="beliefDot" style="background:#FFB84D;box-shadow:0 0 8px #FFB84D;"></span>
+                <span id="beliefPillText">Loading...</span>
               </div>
             </div>
-
-            <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); font-size: 0.8125rem; color: var(--soft); line-height: 1.6;">
+            <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border);font-size:0.8125rem;color:var(--soft);line-height:1.6;" id="beliefFootnote">
               Shows real-time belief based on model evaluation scores. Updates when new test results come in.
             </div>
           </div>
         </div>
 
+        <!-- Models ranking -->
         <div class="card">
           <div class="cardHeader">
             <div class="cardTitle">Models ranking</div>
-            <div class="hintPill">
-              <span class="dot" style="width:6px;height:6px;"></span>
-              <span id="rightHint">Live</span>
+            <div class="hintPill" id="rankPill">
+              <span class="dot miniDot" style="background:var(--green);box-shadow:0 0 8px var(--green);" id="rankDot"></span>
+              <span id="rankPillText">Live</span>
             </div>
           </div>
           <div class="body">
@@ -564,24 +548,34 @@
         </div>
       </div>
 
+      <!-- Delphi official chart -->
       <div class="card fullRow">
         <div class="cardHeader">
           <div class="cardTitle">Delphi market chart (official)</div>
-          <div class="hintPill" id="delphiChartStatusPill">
-            <span class="dot" style="width:6px;height:6px;background:#FFB84D;box-shadow:0 0 8px #FFB84D;" id="delphiChartStatusDot"></span>
-            <span id="delphiChartStatusText">Loading...</span>
+          <div class="hintPill" id="delphiPill">
+            <span class="dot miniDot" style="background:#FFB84D;box-shadow:0 0 8px #FFB84D;" id="delphiDot"></span>
+            <span id="delphiPillText">Loading...</span>
           </div>
         </div>
-
         <div class="chipsWrap" id="delphiLegend"></div>
-
         <div class="body">
-          <div class="chartShell">
-            <canvas id="delphiChartCanvas"></canvas>
-          </div>
-          <div class="foot">
-            <div>Entry prices over time</div>
-          </div>
+          <div class="chartShell"><canvas id="delphiChartCanvas"></canvas></div>
+          <div class="foot"><div>Entry prices over time</div></div>
+        </div>
+      </div>
+
+      <!-- Coming Soon (shown only when market settled and no new one yet) -->
+      <div class="comingSoon" id="comingSoon">
+        <div class="csIcon">⚡</div>
+        <div class="csTitle">Next Market — Coming Soon</div>
+        <div class="csDesc">
+          The next Gensyn benchmark market is being prepared. A new round of AI model evaluations will begin shortly.
+          Follow <a href="https://x.com/gensyn_ai" target="_blank" rel="noopener">@gensyn_ai</a> for announcements.
+        </div>
+        <div class="csDots">
+          <div class="csDot"></div>
+          <div class="csDot"></div>
+          <div class="csDot"></div>
         </div>
       </div>
 
@@ -593,21 +587,25 @@
   const MAX_POINTS = 200;
   const MARKET_ID = 4;
 
+  // ─── Settled state ───────────────────────────────────────────────────────
+  let marketIsSettled = false;
+  let confirmedWinner = null;
+  let refreshInterval = null;
+
+  // ─── Chart data state ────────────────────────────────────────────────────
   let modelNames = [];
   let MODEL_COUNT = 0;
-
   let timestamps = [];
   let series = [];
   let latestEvalScores = [];
   let allEvalHistory = [];
   let lastProcessedEvalCounts = [];
-
   let viewMode = "all";
   let activeSingleIndex = 0;
   let chipEnabled = [];
+  let latestMarketPrices = {};
 
-  let latestMarketPrices = {}; // name -> price(prob)
-
+  // ─── Helpers ─────────────────────────────────────────────────────────────
   function canonicalKey(name){
     const n = String(name || "").toLowerCase().trim();
     if (n.includes("grok")) return "grok";
@@ -616,60 +614,114 @@
     if (n.includes("gpt")) return "gpt";
     return "other";
   }
-
   function colorForModelName(name){
     const k = canonicalKey(name);
-    if (k === "grok") return "#5B9FFF";
+    if (k === "grok")   return "#5B9FFF";
     if (k === "gemini") return "#FF9D5C";
     if (k === "claude") return "#00D89F";
-    if (k === "gpt") return "#FF5C7C";
+    if (k === "gpt")    return "#FF5C7C";
     return "#A78BFA";
   }
-
   function nowLabel(){
-    const now = new Date();
-    return now.toLocaleTimeString([], { hour:"2-digit", minute:"2-digit", second:"2-digit", hour12: true });
+    return new Date().toLocaleTimeString([], { hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:true });
   }
-
   function normalize(scores){
     const cleaned = scores.map(s => (typeof s === "number" && Number.isFinite(s) ? Math.max(s,0) : 0));
     const sum = cleaned.reduce((a,b)=>a+b,0);
-    if (sum <= 0) return cleaned.map(()=> cleaned.length ? (1/cleaned.length) : 0);
+    if (sum <= 0) return cleaned.map(()=> cleaned.length ? 1/cleaned.length : 0);
     return cleaned.map(v=>v/sum);
   }
-
   function extractScore(raw){
     const arr = raw?.evals;
-    if (!Array.isArray(arr) || arr.length === 0) return null;
-    const latest = arr[arr.length - 1];
-    const candidates = ["aggregate","avg_score","avgScore","average_score","score","value"];
-    for (const k of candidates){
+    if (!Array.isArray(arr) || !arr.length) return null;
+    const latest = arr[arr.length-1];
+    for (const k of ["aggregate","avg_score","avgScore","average_score","score","value"]){
       const v = latest?.[k];
       if (typeof v === "number" && Number.isFinite(v)) return v;
     }
     return null;
   }
-
-  function extractScoreAtIndex(raw, evalIndex){
+  function extractScoreAtIndex(raw, idx){
     const arr = raw?.evals;
-    if (!Array.isArray(arr) || evalIndex < 0 || evalIndex >= arr.length) return null;
-    const evalItem = arr[evalIndex];
-    const candidates = ["aggregate","avg_score","avgScore","average_score","score","value"];
-    for (const k of candidates){
-      const v = evalItem?.[k];
+    if (!Array.isArray(arr) || idx < 0 || idx >= arr.length) return null;
+    for (const k of ["aggregate","avg_score","avgScore","average_score","score","value"]){
+      const v = arr[idx]?.[k];
       if (typeof v === "number" && Number.isFinite(v)) return v;
     }
     return null;
   }
-
   function escapeHtml(s){
-    return String(s ?? "")
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;");
+    return String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+  }
+  function setPillSettled(dotId, textId, pillId, text){
+    const dot = document.getElementById(dotId);
+    const txt = document.getElementById(textId);
+    const pill = document.getElementById(pillId);
+    if (dot){ dot.style.background="var(--green)"; dot.style.boxShadow="none"; }
+    if (txt) txt.textContent = text || "Settled";
+    if (pill) pill.classList.add("is-settled");
+  }
+  function setPillLive(dotId, textId, pillId, text){
+    const dot = document.getElementById(dotId);
+    const txt = document.getElementById(textId);
+    const pill = document.getElementById(pillId);
+    if (dot){ dot.style.background="var(--green)"; dot.style.boxShadow="0 0 8px var(--green)"; }
+    if (txt) txt.textContent = text || "Live";
+    if (pill) pill.classList.remove("is-settled");
+  }
+  function setPillLoading(dotId, textId){
+    const dot = document.getElementById(dotId);
+    const txt = document.getElementById(textId);
+    if (dot){ dot.style.background="#FFB84D"; dot.style.boxShadow="0 0 8px #FFB84D"; }
+    if (txt) txt.textContent = "Loading...";
   }
 
-  // Chart defaults
+  // ─── Apply settled UI (called once when status=closed detected) ──────────
+  function applySettled(winner){
+    if (marketIsSettled) return; // only run once
+    marketIsSettled = true;
+    confirmedWinner = winner;
+
+    // Main pill
+    const mainPill = document.getElementById("mainPill");
+    const mainDot  = document.getElementById("mainDot");
+    mainPill.classList.add("is-settled");
+    mainDot.classList.remove("pulse");
+    mainDot.classList.add("settled");
+    document.getElementById("mainPillText").textContent = "Settled";
+
+    // Settled banner
+    document.getElementById("settledBanner").classList.add("visible");
+    if (winner){
+      document.getElementById("settledWinnerChip").style.display = "";
+      document.getElementById("settledWinnerName").textContent = winner;
+    }
+
+    // Stat cards tint
+    ["sc0","sc1","sc2","sc3"].forEach(id => document.getElementById(id)?.classList.add("settled-tint"));
+
+    // Status text + refresh info
+    document.getElementById("marketStatus").textContent = "Settled";
+    document.getElementById("refreshInfo").textContent = "—";
+
+    // All pills → Settled
+    setPillSettled("gapDot","gapPillText","gapPill","Settled");
+    setPillSettled("beliefDot","beliefPillText","beliefPill","Settled");
+    setPillSettled("rankDot","rankPillText","rankPill","Settled");
+    setPillSettled("delphiDot","delphiPillText","delphiPill","Settled");
+
+    // Footnote
+    document.getElementById("beliefFootnote").textContent =
+      "Final evaluation scores for this settled market. No further updates will occur.";
+
+    // Show coming soon
+    document.getElementById("comingSoon").classList.add("visible");
+
+    // Stop auto-refresh
+    if (refreshInterval){ clearInterval(refreshInterval); refreshInterval = null; }
+  }
+
+  // ─── Charts ──────────────────────────────────────────────────────────────
   Chart.defaults.color = '#6B7588';
   Chart.defaults.borderColor = 'rgba(255,255,255,0.1)';
   Chart.defaults.font.family = "'Inter', sans-serif";
@@ -678,77 +730,43 @@
     type: "line",
     data: { labels: timestamps, datasets: [] },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: 'rgba(15,18,41,0.95)',
-          borderColor: 'rgba(255,255,255,0.1)',
-          borderWidth: 1,
-          padding: 12
-        }
-      },
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display:false }, tooltip: { backgroundColor:'rgba(15,18,41,0.95)', borderColor:'rgba(255,255,255,0.1)', borderWidth:1, padding:12 } },
       scales: {
-        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6B7588', font: { size: 11 } } },
-        y: {
-          min: 0, max: 1,
-          grid: { color: 'rgba(255,255,255,0.05)' },
-          ticks: {
-            color: '#6B7588',
-            font: { size: 11 },
-            callback: (v) => (v * 100).toFixed(0) + '%'
-          }
-        }
+        x: { grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#6B7588', font:{size:11} } },
+        y: { min:0, max:1, grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#6B7588', font:{size:11}, callback: v=>(v*100).toFixed(0)+'%' } }
       }
     }
   });
 
   const marketChart = new Chart(document.getElementById("delphiChartCanvas"), {
     type: "line",
-    data: { labels: [], datasets: [] },
+    data: { labels:[], datasets:[] },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          mode: 'index', intersect: false,
-          backgroundColor: 'rgba(15,18,41,0.95)',
-          borderColor: 'rgba(255,255,255,0.1)',
-          borderWidth: 1,
-          padding: 12
-        }
-      },
+      responsive:true, maintainAspectRatio:false,
+      plugins: { legend:{display:false}, tooltip:{ mode:'index', intersect:false, backgroundColor:'rgba(15,18,41,0.95)', borderColor:'rgba(255,255,255,0.1)', borderWidth:1, padding:12 } },
       scales: {
-        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6B7588', font: { size: 11 } } },
-        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6B7588', font: { size: 11 } } }
+        x: { grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'#6B7588',font:{size:11}} },
+        y: { grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'#6B7588',font:{size:11}} }
       }
     }
   });
 
   function updateBeliefChartScale(){
-    if (!series.length || !series[0]?.length) return;
-    const allValues = series.flat().filter(v => typeof v === 'number' && Number.isFinite(v));
-    if (!allValues.length) return;
-    const min = Math.min(...allValues);
-    const max = Math.max(...allValues);
-    const range = max - min;
-    const padding = Math.max(range * 0.2, 0.02);
-    beliefChart.options.scales.y.min = Math.max(0, min - padding);
-    beliefChart.options.scales.y.max = Math.min(1, max + padding);
+    const all = series.flat().filter(v=>typeof v==="number"&&Number.isFinite(v));
+    if (!all.length) return;
+    const min=Math.min(...all), max=Math.max(...all), pad=Math.max((max-min)*0.2,0.02);
+    beliefChart.options.scales.y.min = Math.max(0,min-pad);
+    beliefChart.options.scales.y.max = Math.min(1,max+pad);
   }
 
   function rebuildBeliefDatasets(){
-    beliefChart.data.datasets = Array.from({ length: MODEL_COUNT }, (_, i) => ({
-      label: modelNames[i] || `Entry #${i}`,
-      data: series[i] || [],
+    beliefChart.data.datasets = Array.from({length:MODEL_COUNT},(_,i)=>({
+      label: modelNames[i]||`Entry #${i}`,
+      data: series[i]||[],
       borderColor: colorForModelName(modelNames[i]),
       borderWidth: 2.5,
-      pointRadius: (ctx) => {
-        const label = ctx.chart.data.labels?.[ctx.dataIndex];
-        return (label && String(label).startsWith('Eval')) ? 4 : 0;
-      },
+      pointRadius: ctx=>{ const l=ctx.chart.data.labels?.[ctx.dataIndex]; return l&&String(l).startsWith('Eval')?4:0; },
       pointHoverRadius: 6,
       pointBackgroundColor: colorForModelName(modelNames[i]),
       pointBorderColor: '#0A0D1F',
@@ -760,464 +778,342 @@
 
   function renderChips(){
     const el = document.getElementById("chipsWrap");
-    el.innerHTML = modelNames.map((name, i) => {
+    el.innerHTML = modelNames.map((name,i)=>{
       const color = colorForModelName(name);
-      const isOn = (viewMode === "one") ? (i === activeSingleIndex) : !!chipEnabled[i];
-      return `
-        <div class="chip ${isOn ? '' : 'off'}" data-idx="${i}">
-          <span class="swatch" style="background:${color};"></span>
-          <span>${escapeHtml(name)}</span>
-        </div>
-      `;
+      const on = viewMode==="one" ? i===activeSingleIndex : !!chipEnabled[i];
+      return `<div class="chip ${on?'':'off'}" data-idx="${i}"><span class="swatch" style="background:${color};"></span><span>${escapeHtml(name)}</span></div>`;
     }).join("");
-
-    el.querySelectorAll(".chip").forEach(chip => {
-      chip.addEventListener("click", () => {
-        const i = Number(chip.getAttribute("data-idx"));
-        if (viewMode === "one"){
-          activeSingleIndex = i;
-        } else {
-          chipEnabled[i] = !chipEnabled[i];
-          if (chipEnabled.every(v => !v)) chipEnabled[i] = true;
-        }
-        applyViewMode();
-        renderChips();
+    el.querySelectorAll(".chip").forEach(chip=>{
+      chip.addEventListener("click",()=>{
+        const i=Number(chip.getAttribute("data-idx"));
+        if (viewMode==="one"){ activeSingleIndex=i; }
+        else { chipEnabled[i]=!chipEnabled[i]; if(chipEnabled.every(v=>!v)) chipEnabled[i]=true; }
+        applyViewMode(); renderChips();
       });
     });
   }
 
   function applyViewMode(){
-    document.getElementById("segAll").classList.toggle("active", viewMode === "all");
-    document.getElementById("segOne").classList.toggle("active", viewMode === "one");
-
-    if (viewMode === "one"){
-      beliefChart.data.datasets.forEach((ds, i) => ds.hidden = (i !== activeSingleIndex));
-    } else {
-      beliefChart.data.datasets.forEach((ds, i) => ds.hidden = !chipEnabled[i]);
-    }
+    document.getElementById("segAll").classList.toggle("active",viewMode==="all");
+    document.getElementById("segOne").classList.toggle("active",viewMode==="one");
+    if (viewMode==="one"){ beliefChart.data.datasets.forEach((ds,i)=>ds.hidden=i!==activeSingleIndex); }
+    else { beliefChart.data.datasets.forEach((ds,i)=>ds.hidden=!chipEnabled[i]); }
     beliefChart.update();
-
-    const shown = (viewMode === "one") ? 1 : chipEnabled.filter(Boolean).length;
+    const shown = viewMode==="one" ? 1 : chipEnabled.filter(Boolean).length;
     document.getElementById("modelsShown").textContent = `${shown}/${MODEL_COUNT}`;
   }
 
-  document.getElementById("segAll").addEventListener("click", () => {
-    viewMode = "all";
-    chipEnabled = Array.from({length: MODEL_COUNT}, () => true);
-    applyViewMode();
-    renderChips();
-  });
+  document.getElementById("segAll").addEventListener("click",()=>{ viewMode="all"; chipEnabled=Array.from({length:MODEL_COUNT},()=>true); applyViewMode(); renderChips(); });
+  document.getElementById("segOne").addEventListener("click",()=>{ viewMode="one"; activeSingleIndex=chipEnabled.findIndex(Boolean)||0; applyViewMode(); renderChips(); });
 
-  document.getElementById("segOne").addEventListener("click", () => {
-    viewMode = "one";
-    const firstOn = chipEnabled.findIndex(Boolean);
-    activeSingleIndex = firstOn >= 0 ? firstOn : 0;
-    applyViewMode();
-    renderChips();
-  });
-
+  // ─── Render models ranking ────────────────────────────────────────────────
   function renderModels(probs){
-    const rows = modelNames.map((name, i) => ({
-      i,
-      name,
-      p: probs?.[i] ?? 0,
-      eval: latestEvalScores?.[i] ?? null,
-      evalHistory: allEvalHistory?.[i] ?? []
-    })).sort((a,b)=>b.p - a.p);
+    const rows = modelNames.map((name,i)=>({ i, name, p:probs?.[i]??0, eval:latestEvalScores?.[i]??null, evalHistory:allEvalHistory?.[i]??[] }))
+      .sort((a,b)=>b.p-a.p);
 
-    document.getElementById("modelsList").innerHTML = rows.map((r, idx) => {
-      const pct = `${Math.round(r.p * 1000)/10}%`;
+    document.getElementById("modelsList").innerHTML = rows.map((r,idx)=>{
+      const pct = `${Math.round(r.p*1000)/10}%`;
       const color = colorForModelName(r.name);
-      const evalTxt = (typeof r.eval === "number" && Number.isFinite(r.eval)) ? r.eval.toFixed(2) : "—";
-      const displayName = r.name; // keep exact API label (no forced capitalization)
+      const evalTxt = (typeof r.eval==="number"&&Number.isFinite(r.eval)) ? r.eval.toFixed(2) : "—";
+      const isWinner = marketIsSettled && confirmedWinner &&
+        r.name.trim().toLowerCase() === confirmedWinner.trim().toLowerCase();
+      const winnerTag = isWinner ? `<span class="winnerTag">🏆 Winner</span>` : "";
 
-      const history = Array.isArray(r.evalHistory) ? r.evalHistory.slice() : [];
-      const reversed = history.slice().reverse();
-      const evalHistoryHTML = reversed.length ? `
-        <div class="evalHistory" title="Scroll to see older evals">
-          ${reversed.map((score, revIdx) => {
-            const isLatest = revIdx === 0;
-            const originalEvalNum = history.length - revIdx;
-            return `
-              <span class="evalBadge ${isLatest ? 'latest' : ''}">
-                Eval #${originalEvalNum}: ${Number(score).toFixed(2)}
-              </span>
-            `;
+      const reversed = (r.evalHistory||[]).slice().reverse();
+      const evalHTML = reversed.length ? `
+        <div class="evalHistory">
+          ${reversed.map((score,ri)=>{
+            const isLatest = ri===0;
+            const num = r.evalHistory.length - ri;
+            return `<span class="evalBadge ${isLatest?'latest':''}">Eval #${num}: ${Number(score).toFixed(2)}</span>`;
           }).join("")}
-        </div>
-      ` : "";
+        </div>` : "";
 
       return `
-        <div class="modelRow">
+        <div class="modelRow ${isWinner?'is-winner':''}">
           <div class="mLeft">
             <div class="badge" style="border-color:${color}33;background:${color}18;color:${color}">#${idx+1}</div>
-
             <div class="mMain">
-              <div class="mTop">
-                <div class="mName">${escapeHtml(displayName)}</div>
-              </div>
-
+              <div class="mTop"><div class="mName">${escapeHtml(r.name)}</div></div>
               <div class="mMeta">
-  <div class="mEval">Latest: ${evalTxt}</div>
-</div>
-
-              ${evalHistoryHTML}
+                <div class="mEval">Latest: ${evalTxt}</div>
+                ${winnerTag}
+              </div>
+              ${evalHTML}
             </div>
           </div>
-
           <div class="pct">${pct}</div>
-        </div>
-      `;
+        </div>`;
     }).join("");
 
     const top = rows[0];
-    if (top) document.getElementById("topBeliefPct").textContent = `${Math.round(top.p * 1000)/10}%`;
+    if (top) document.getElementById("topBeliefPct").textContent = `${Math.round(top.p*1000)/10}%`;
   }
 
+  // ─── Render gap analysis ──────────────────────────────────────────────────
   function renderGapAnalysis(beliefProbs, raw){
-    const hasMarketData = Object.keys(latestMarketPrices).length > 0;
-
-    let previousBeliefProbs = null;
-    const minEvalCount = allEvalHistory.length ? Math.min(...allEvalHistory.map(h => h.length)) : 0;
-
-    if (minEvalCount >= 2 && Array.isArray(raw) && raw.length){
-      const prevScores = raw.slice(0, MODEL_COUNT).map((modelData, idx) => {
-        return extractScoreAtIndex(modelData, allEvalHistory[idx].length - 2);
-      });
-      previousBeliefProbs = normalize(prevScores.map(s => (typeof s === "number" ? s : 0)));
+    const hasMarket = Object.keys(latestMarketPrices).length > 0;
+    let prevProbs = null;
+    const minEvals = allEvalHistory.length ? Math.min(...allEvalHistory.map(h=>h.length)) : 0;
+    if (minEvals >= 2 && Array.isArray(raw) && raw.length){
+      const prevScores = raw.slice(0,MODEL_COUNT).map((md,i)=>extractScoreAtIndex(md, allEvalHistory[i].length-2));
+      prevProbs = normalize(prevScores.map(s=>typeof s==="number"?s:0));
     }
 
-    const rows = modelNames.map((name, i) => {
-      const belief = beliefProbs?.[i] ?? 0;
-      const market = latestMarketPrices[name] ?? 0;
-
+    const rows = modelNames.map((name,i)=>{
+      const belief = beliefProbs?.[i]??0;
+      const market = latestMarketPrices[name]??0;
       const gap = market - belief;
-      const gapPct = Math.round(gap * 1000) / 10;
+      const gapPct = Math.round(gap*1000)/10;
 
-      let changeIndicator = '';
-      if (previousBeliefProbs && previousBeliefProbs[i] !== undefined){
-        const prevBelief = previousBeliefProbs[i];
-        const changePct = Math.round((belief - prevBelief) * 1000) / 10;
-        if (Math.abs(changePct) >= 0.1){
-          const changeClass = changePct > 0 ? 'up' : 'down';
-          const arrow = changePct > 0 ? '↑' : '↓';
-          const sign = changePct > 0 ? '+' : '';
-          changeIndicator = `<span class="beliefChange ${changeClass}">${arrow}${sign}${changePct}%</span>`;
+      let changeHtml = '';
+      if (prevProbs?.[i]!==undefined){
+        const ch = Math.round((belief-prevProbs[i])*1000)/10;
+        if (Math.abs(ch)>=0.1){
+          const cls = ch>0?'up':'down', arrow = ch>0?'↑':'↓', sign = ch>0?'+':'';
+          changeHtml = `<span class="beliefChange ${cls}">${arrow}${sign}${ch}%</span>`;
         }
       }
 
-      let signal = 'ALIGNED';
-      let gapClass = 'neutral';
+      const isWinner = marketIsSettled && confirmedWinner &&
+        name.trim().toLowerCase() === confirmedWinner.trim().toLowerCase();
 
-      if (hasMarketData){
-        if (Math.abs(gapPct) < 5) { signal = 'ALIGNED'; gapClass = 'neutral'; }
-        else if (gapPct > 0) { signal = 'OVERPRICED'; gapClass = 'overvalued'; }
-        else { signal = 'UNDERPRICED'; gapClass = 'undervalued'; }
-      } else {
-        signal = 'LOADING';
+      let signal, gapClass, signalHtml;
+      if (marketIsSettled){
+        signal = isWinner ? 'WINNER' : 'FINAL';
         gapClass = 'neutral';
-      }
+        signalHtml = isWinner
+          ? `<div class="gapSignalBadge final-winner">🏆 WINNER</div>`
+          : `<div class="gapSignalBadge final-result">FINAL</div>`;
+      } else if (!hasMarket){
+        signal='LOADING'; gapClass='neutral';
+        signalHtml = `<div class="gapSignalBadge loading"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>LOADING</div>`;
+      } else if (Math.abs(gapPct)<5){ signal='ALIGNED'; gapClass='neutral'; signalHtml=`<div class="gapSignalBadge aligned">ALIGNED</div>`; }
+      else if (gapPct>0){ signal='OVERPRICED'; gapClass='overvalued'; signalHtml=`<div class="gapSignalBadge overpriced">OVERPRICED</div>`; }
+      else { signal='UNDERPRICED'; gapClass='undervalued'; signalHtml=`<div class="gapSignalBadge underpriced">UNDERPRICED</div>`; }
 
-      const beliefPct = `${Math.round(belief * 1000) / 10}%`;
-      const marketPct = hasMarketData ? `${Math.round(market * 1000) / 10}%` : '—';
-      const gapDisplay = hasMarketData ? (gapPct > 0 ? `+${gapPct}%` : `${gapPct}%`) : '—';
+      return { name, belief, market, gapPct, signal, gapClass, signalHtml,
+        beliefPct: `${Math.round(belief*1000)/10}%`,
+        marketPct: hasMarket ? `${Math.round(market*1000)/10}%` : '—',
+        gapDisplay: hasMarket ? (gapPct>0?`+${gapPct}%`:`${gapPct}%`) : '—',
+        changeHtml, isWinner };
+    }).sort((a,b)=>b.belief-a.belief);
 
-      return { name, belief, market, gapPct, signal, gapClass, beliefPct, marketPct, gapDisplay, hasMarketData, changeIndicator };
-    }).sort((a,b) => b.belief - a.belief);
-
-    document.getElementById("gapAnalysisList").innerHTML = rows.map((r, idx) => {
+    document.getElementById("gapAnalysisList").innerHTML = rows.map((r,idx)=>{
       const color = colorForModelName(r.name);
-      const displayName = r.name;
-
-      const signalBadgeContent = r.hasMarketData
-        ? `<div class="gapSignalBadge ${r.signal.toLowerCase()}">${r.signal}</div>`
-        : `<div class="gapSignalBadge loading">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite;">
-              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-            </svg>
-            LOADING
-          </div>`;
-
       return `
-        <div class="gapCard">
+        <div class="gapCard ${r.isWinner?'is-winner':''}">
           <div class="gapLeft">
             <div class="badge" style="border-color:${color}33;background:${color}18;color:${color}">#${idx+1}</div>
-            <div class="gapModelName">${escapeHtml(displayName)}</div>
+            <div class="gapModelName">${escapeHtml(r.name)}</div>
           </div>
-
           <div class="gapMetrics">
             <div class="gapMetricSmall">
               <div class="gapLabel">Belief</div>
-              <div class="gapValue"><span>${r.beliefPct}</span>${r.changeIndicator}</div>
+              <div class="gapValue"><span>${r.beliefPct}</span>${r.changeHtml}</div>
             </div>
             <div class="gapMetricSmall">
               <div class="gapLabel">Market</div>
               <div class="gapValue">${r.marketPct}</div>
             </div>
           </div>
-
           <div class="gapRight">
             <div class="gapDiffBadge ${r.gapClass}">${r.gapDisplay}</div>
-            ${signalBadgeContent}
+            ${r.signalHtml}
           </div>
-        </div>
-      `;
+        </div>`;
     }).join("");
 
-    const statusDot = document.getElementById("gapStatusDot");
-    const statusText = document.getElementById("gapStatusText");
-    if (hasMarketData){
-      statusDot.style.background = "var(--green)";
-      statusDot.style.boxShadow = "0 0 8px var(--green)";
-      statusText.textContent = "Live";
-    } else {
-      statusDot.style.background = "#FFB84D";
-      statusDot.style.boxShadow = "0 0 8px #FFB84D";
-      statusText.textContent = "Loading...";
+    // Update gap pill
+    if (!marketIsSettled){
+      if (hasMarket){ setPillLive("gapDot","gapPillText","gapPill","Live"); }
+      else { setPillLoading("gapDot","gapPillText"); }
     }
   }
 
   function renderDelphiLegend(names){
-    document.getElementById("delphiLegend").innerHTML = (names || []).map((n) => {
+    document.getElementById("delphiLegend").innerHTML = (names||[]).map(n=>{
       const c = colorForModelName(n);
       return `<div class="chip"><span class="swatch" style="background:${c};"></span><span>${escapeHtml(n)}</span></div>`;
     }).join("");
   }
 
-  function setBeliefStatus(isLive){
-    const dot = document.getElementById("beliefStatusDot");
-    const txt = document.getElementById("beliefStatusText");
-    if (isLive){
-      dot.style.background = "var(--green)";
-      dot.style.boxShadow = "0 0 8px var(--green)";
-      txt.textContent = "Live";
-    } else {
-      dot.style.background = "#FFB84D";
-      dot.style.boxShadow = "0 0 8px #FFB84D";
-      txt.textContent = "Loading...";
-    }
-  }
-
+  // ─── Main refresh ─────────────────────────────────────────────────────────
   async function refresh(){
-    const beliefRes = await fetch("/api/human-belief");
-    const delphiRes = await fetch(`/api/delphi-chart?timeframe=auto&market_id=${MARKET_ID}`);
-
+    const [beliefRes, delphiRes] = await Promise.all([
+      fetch("/api/human-belief"),
+      fetch(`/api/delphi-chart?timeframe=auto&market_id=${MARKET_ID}`)
+    ]);
     const data = await beliefRes.json();
     const delphiPayload = await delphiRes.json();
 
-    // ---- Models + histories (belief API) ----
+    // ── Detect settled status ──
+    const statusRaw = String(data.status || "").toLowerCase();
+    if (!marketIsSettled && (statusRaw === "closed" || statusRaw === "settled")){
+      // Fetch the confirmed winner from historical analysis
+      try {
+        const hr = await fetch("/api/historical-analysis");
+        const hdata = await hr.json();
+        const mkt = (hdata.markets||[]).find(m=>String(m.marketId)===String(MARKET_ID));
+        applySettled(mkt?.actualWinner || null);
+      } catch {
+        applySettled(null);
+      }
+    }
+
+    // ── Models ──
     if (Array.isArray(data.model_names) && data.model_names.length > 0){
-      const incomingNames = data.model_names.slice();
-      const changedModelSet = incomingNames.join("|") !== modelNames.join("|");
-
-      modelNames = incomingNames;
+      const incoming = data.model_names.slice();
+      const changed = incoming.join("|") !== modelNames.join("|");
+      modelNames = incoming;
       MODEL_COUNT = modelNames.length;
-
-      if (changedModelSet || series.length !== MODEL_COUNT){
-        timestamps = [];
-        series = Array.from({ length: MODEL_COUNT }, () => []);
-        latestEvalScores = Array.from({ length: MODEL_COUNT }, () => null);
-        allEvalHistory = Array.from({ length: MODEL_COUNT }, () => []);
-        lastProcessedEvalCounts = Array.from({ length: MODEL_COUNT }, () => 0);
-        chipEnabled = Array.from({ length: MODEL_COUNT }, () => true);
-        activeSingleIndex = 0;
-        viewMode = "all";
-        beliefChart.data.labels = timestamps;
-        rebuildBeliefDatasets();
+      if (changed || series.length !== MODEL_COUNT){
+        timestamps=[]; series=Array.from({length:MODEL_COUNT},()=>[]);
+        latestEvalScores=Array.from({length:MODEL_COUNT},()=>null);
+        allEvalHistory=Array.from({length:MODEL_COUNT},()=>[]);
+        lastProcessedEvalCounts=Array.from({length:MODEL_COUNT},()=>0);
+        chipEnabled=Array.from({length:MODEL_COUNT},()=>true);
+        activeSingleIndex=0; viewMode="all";
+        beliefChart.data.labels=timestamps; rebuildBeliefDatasets();
       } else if (!chipEnabled.length){
-        chipEnabled = Array.from({ length: MODEL_COUNT }, () => true);
+        chipEnabled=Array.from({length:MODEL_COUNT},()=>true);
       }
     }
 
     document.getElementById("marketName").textContent = data.market_name || "Delphi market";
-    document.getElementById("marketNumber").textContent = `Market #${data.market_id ?? "—"}`;
-
-    const statusRaw = data.status || "—";
-    const status = statusRaw.charAt(0).toUpperCase() + statusRaw.slice(1).toLowerCase();
-    document.getElementById("marketStatus").textContent = status;
-
+    document.getElementById("marketNumber").textContent = `Market #${data.market_id??"—"}`;
+    if (!marketIsSettled){
+      const s = statusRaw;
+      document.getElementById("marketStatus").textContent = s ? s.charAt(0).toUpperCase()+s.slice(1) : "—";
+    }
     document.getElementById("lastUpdate").textContent = nowLabel();
-    document.getElementById("modelsCount").textContent = String(MODEL_COUNT || 0);
+    document.getElementById("modelsCount").textContent = String(MODEL_COUNT||0);
 
     const raw = Array.isArray(data.raw) ? data.raw : [];
     let probs = null;
 
     if (MODEL_COUNT && raw.length){
-      // latest scores
-      const scores = raw.slice(0, MODEL_COUNT).map(extractScore);
-      latestEvalScores = scores.map(s => (typeof s === "number" && Number.isFinite(s)) ? s : null);
+      const scores = raw.slice(0,MODEL_COUNT).map(extractScore);
+      latestEvalScores = scores.map(s=>(typeof s==="number"&&Number.isFinite(s))?s:null);
 
-      // full eval history per model
-      allEvalHistory = raw.slice(0, MODEL_COUNT).map(modelData => {
-        const evals = modelData?.evals;
+      allEvalHistory = raw.slice(0,MODEL_COUNT).map(md=>{
+        const evals = md?.evals;
         if (!Array.isArray(evals)) return [];
-        const candidates = ["aggregate","avg_score","avgScore","average_score","score","value"];
-        return evals.map(ev => {
-          for (const k of candidates){
-            const v = ev?.[k];
-            if (typeof v === "number" && Number.isFinite(v)) return v;
+        return evals.map(ev=>{
+          for (const k of ["aggregate","avg_score","avgScore","average_score","score","value"]){
+            const v=ev?.[k]; if(typeof v==="number"&&Number.isFinite(v)) return v;
           }
           return null;
-        }).filter(v => v !== null);
+        }).filter(v=>v!==null);
       });
 
-      const currentEvalCounts = allEvalHistory.map(h => h.length);
-      const hasNewEval = currentEvalCounts.some((count, i) => count > (lastProcessedEvalCounts[i] ?? 0));
+      const counts = allEvalHistory.map(h=>h.length);
+      const hasNew = counts.some((c,i)=>c>(lastProcessedEvalCounts[i]??0));
 
-      // first build: create points for all past evals
-      if (timestamps.length === 0){
-        const maxEvals = Math.max(...currentEvalCounts, 0);
-
-        for (let evalNum = 1; evalNum <= maxEvals; evalNum++){
-          const evalScores = raw.slice(0, MODEL_COUNT).map(modelData => extractScoreAtIndex(modelData, evalNum - 1));
-          const hasScores = evalScores.some(s => typeof s === "number" && Number.isFinite(s));
-          if (!hasScores) continue;
-
-          const p = normalize(evalScores.map(s => (typeof s === "number" ? s : 0)));
-          timestamps.push(`Eval #${evalNum}`);
-          p.forEach((val, i) => series[i].push(val));
-
-          // smooth between evals (optional)
-          if (evalNum < maxEvals){
-            const nextScores = raw.slice(0, MODEL_COUNT).map(modelData => extractScoreAtIndex(modelData, evalNum));
-            const hasNext = nextScores.some(s => typeof s === "number" && Number.isFinite(s));
-            if (hasNext){
-              const nextP = normalize(nextScores.map(s => (typeof s === "number" ? s : 0)));
-              timestamps.push('');
-              p.forEach((val, i) => series[i].push(val + (nextP[i] - val) * 0.3));
-              timestamps.push('');
-              p.forEach((val, i) => series[i].push(val + (nextP[i] - val) * 0.7));
+      if (timestamps.length===0){
+        const maxE = Math.max(...counts,0);
+        for (let n=1; n<=maxE; n++){
+          const es = raw.slice(0,MODEL_COUNT).map(md=>extractScoreAtIndex(md,n-1));
+          if (!es.some(s=>typeof s==="number"&&Number.isFinite(s))) continue;
+          const p = normalize(es.map(s=>typeof s==="number"?s:0));
+          timestamps.push(`Eval #${n}`); p.forEach((v,i)=>series[i].push(v));
+          if (n<maxE){
+            const ns=raw.slice(0,MODEL_COUNT).map(md=>extractScoreAtIndex(md,n));
+            if (ns.some(s=>typeof s==="number"&&Number.isFinite(s))){
+              const np=normalize(ns.map(s=>typeof s==="number"?s:0));
+              timestamps.push(''); p.forEach((v,i)=>series[i].push(v+(np[i]-v)*0.3));
+              timestamps.push(''); p.forEach((v,i)=>series[i].push(v+(np[i]-v)*0.7));
             }
           }
         }
-
-        lastProcessedEvalCounts = currentEvalCounts.slice();
-      } else if (hasNewEval){
-        // append ONLY when a new eval arrives
-        probs = normalize(latestEvalScores.map(s => (typeof s === "number" ? s : 0)));
-        const maxEvalCount = Math.max(...currentEvalCounts, 0);
-
+        lastProcessedEvalCounts=counts.slice();
+      } else if (hasNew){
+        probs=normalize(latestEvalScores.map(s=>typeof s==="number"?s:0));
+        const maxC=Math.max(...counts,0);
         if (series[0]?.length){
-          const prev = series.map(s => s[s.length - 1]);
-          timestamps.push('');
-          probs.forEach((p, i) => series[i].push(prev[i] + (p - prev[i]) * 0.3));
-          timestamps.push('');
-          probs.forEach((p, i) => series[i].push(prev[i] + (p - prev[i]) * 0.7));
+          const prev=series.map(s=>s[s.length-1]);
+          timestamps.push(''); probs.forEach((p,i)=>series[i].push(prev[i]+(p-prev[i])*0.3));
+          timestamps.push(''); probs.forEach((p,i)=>series[i].push(prev[i]+(p-prev[i])*0.7));
         }
-
-        timestamps.push(`Eval #${maxEvalCount}`);
-        probs.forEach((p, i) => series[i].push(p));
-
-        lastProcessedEvalCounts = currentEvalCounts.slice();
-
-        if (timestamps.length > MAX_POINTS){
-          timestamps.shift();
-          series.forEach(a => a.shift());
-        }
+        timestamps.push(`Eval #${maxC}`); probs.forEach((p,i)=>series[i].push(p));
+        lastProcessedEvalCounts=counts.slice();
+        if (timestamps.length>MAX_POINTS){ timestamps.shift(); series.forEach(a=>a.shift()); }
       }
 
-      // compute probs always for UI
-      probs = normalize(latestEvalScores.map(s => (typeof s === "number" ? s : 0)));
-
-      beliefChart.data.labels = timestamps;
-      if (beliefChart.data.datasets.length !== MODEL_COUNT) rebuildBeliefDatasets();
-
-      beliefChart.data.datasets.forEach((ds, i) => {
-        ds.label = modelNames[i];
-        ds.borderColor = colorForModelName(modelNames[i]);
-        ds.pointBackgroundColor = colorForModelName(modelNames[i]);
+      probs=normalize(latestEvalScores.map(s=>typeof s==="number"?s:0));
+      beliefChart.data.labels=timestamps;
+      if (beliefChart.data.datasets.length!==MODEL_COUNT) rebuildBeliefDatasets();
+      beliefChart.data.datasets.forEach((ds,i)=>{
+        ds.label=modelNames[i]; ds.borderColor=colorForModelName(modelNames[i]); ds.pointBackgroundColor=colorForModelName(modelNames[i]);
       });
-
-      updateBeliefChartScale();
-      beliefChart.update();
+      updateBeliefChartScale(); beliefChart.update();
 
       document.getElementById("pointsCount").textContent = String(timestamps.length);
-
       renderModels(probs);
-      renderChips();
-      applyViewMode();
-
-      // Gap analysis uses market prices if available
+      renderChips(); applyViewMode();
       renderGapAnalysis(probs, raw);
 
-      // belief status pill: live only if we also have market data
-      setBeliefStatus(Object.keys(latestMarketPrices).length > 0);
+      if (!marketIsSettled){
+        const hasMP = Object.keys(latestMarketPrices).length>0;
+        if (hasMP){ setPillLive("beliefDot","beliefPillText","beliefPill","Live"); }
+        else { setPillLoading("beliefDot","beliefPillText"); }
+      }
     } else {
-      // no raw yet
       document.getElementById("pointsCount").textContent = String(timestamps.length);
-      setBeliefStatus(false);
+      if (!marketIsSettled) setPillLoading("beliefDot","beliefPillText");
     }
 
-    // ---- Delphi official market chart ----
+    // ── Delphi official chart ──
     const mc = delphiPayload?.market_chart;
     const entryMap = delphiPayload?.entry_map || {};
     const points = mc?.data_points;
 
-    if (Array.isArray(points) && points.length > 0){
-      const labels = points.map(p => {
-        const d = new Date(Number(p.timestamp) * 1000);
-        return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    if (Array.isArray(points) && points.length>0){
+      const labels = points.map(p=>{
+        const d=new Date(Number(p.timestamp)*1000);
+        return d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
       });
+      const entryCount = Number(mc?.entry_count||0);
+      const entryNames = Array.from({length:entryCount},(_,i)=>entryMap[String(i)]||`Entry #${i}`);
 
-      const entryCount = Number(mc?.entry_count || 0);
-      const entryNames = Array.from({ length: entryCount }, (_, i) => entryMap[String(i)] || `Entry #${i}`);
-
-      // capture latest market prices for gap analysis
-      const latestPoint = points[points.length - 1];
-      if (latestPoint?.entries){
-        latestPoint.entries.forEach(ent => {
-          const name = entryMap[String(ent.entry_idx)];
-          if (!name) return;
-          const price = ent?.price;
-          const v = (typeof price === "string") ? Number(price) : (typeof price === "number" ? price : NaN);
-          if (Number.isFinite(v)) latestMarketPrices[name] = v;
+      const latestPt = points[points.length-1];
+      if (latestPt?.entries){
+        latestPt.entries.forEach(ent=>{
+          const name=entryMap[String(ent.entry_idx)]; if(!name) return;
+          const v=typeof ent.price==="string"?Number(ent.price):typeof ent.price==="number"?ent.price:NaN;
+          if (Number.isFinite(v)) latestMarketPrices[name]=v;
         });
-
-        // rerender gap once market prices exist
-        if (probs && raw?.length) renderGapAnalysis(probs, raw);
-        setBeliefStatus(true);
+        if (probs && raw?.length) renderGapAnalysis(probs,raw);
+        if (!marketIsSettled){ setPillLive("beliefDot","beliefPillText","beliefPill","Live"); }
       }
 
-      const datasets = Array.from({ length: entryCount }, (_, entryIdx) => {
-        const label = entryNames[entryIdx];
-        const color = colorForModelName(label);
-        const data = points.map(p => {
-          const ent = (p.entries || []).find(e => String(e.entry_idx) === String(entryIdx));
-          const price = ent?.price;
-          const v = (typeof price === "string") ? Number(price) : (typeof price === "number" ? price : NaN);
-          return Number.isFinite(v) ? v : null;
-        });
-
-        return { label, data, borderColor: color, borderWidth: 2.5, pointRadius: 0, tension: 0.3 };
+      marketChart.data.labels=labels;
+      marketChart.data.datasets=Array.from({length:entryCount},(_,ei)=>{
+        const label=entryNames[ei], color=colorForModelName(label);
+        return { label, borderColor:color, borderWidth:2.5, pointRadius:0, tension:0.3,
+          data:points.map(p=>{ const e=(p.entries||[]).find(e=>String(e.entry_idx)===String(ei)); const v=typeof e?.price==="string"?Number(e.price):typeof e?.price==="number"?e.price:NaN; return Number.isFinite(v)?v:null; }) };
       });
-
-      marketChart.data.labels = labels;
-      marketChart.data.datasets = datasets;
       marketChart.update();
+      renderDelphiLegend(entryNames);
 
-      renderDelphiLegend(datasets.map(d => d.label));
-
-      const delphiStatusDot = document.getElementById("delphiChartStatusDot");
-      const delphiStatusText = document.getElementById("delphiChartStatusText");
-      delphiStatusDot.style.background = "var(--green)";
-      delphiStatusDot.style.boxShadow = "0 0 8px var(--green)";
-      delphiStatusText.textContent = "Live";
+      if (!marketIsSettled){
+        setPillLive("delphiDot","delphiPillText","delphiPill","Live");
+      }
     }
   }
 
   let isRefreshing = false;
   async function safeRefresh(){
     if (isRefreshing) return;
-    isRefreshing = true;
+    isRefreshing=true;
     try { await refresh(); }
-    catch (e) { console.error(e); }
-    finally { isRefreshing = false; }
+    catch(e){ console.error(e); }
+    finally { isRefreshing=false; }
   }
 
   // Init
-  setBeliefStatus(false);
+  refreshInterval = setInterval(safeRefresh, REFRESH_MS);
   safeRefresh();
-  setInterval(safeRefresh, REFRESH_MS);
 </script>
 </body>
 </html>
