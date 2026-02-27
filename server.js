@@ -127,6 +127,14 @@ const MARKET_CONFIG = {
     name: "Gensyn Lightweight General Reasoning Benchmark",
     closedDate: "Jan 30, 2025",
     confirmedWinner: "Qwen/Qwen3-8B",
+    // Confirmed from /api/debug-market/3:
+    // modelIdx=0 → Qwen/Qwen3-8B      → avgAggregate 42.59
+    // modelIdx=1 → mistralai           → avgAggregate 43.54 (higher score but Qwen actually won)
+    // modelIdx=2 → ibm-granite         → avgAggregate 37.02
+    // modelIdx=3 → allenai/olmo        → avgAggregate 34.29
+    // modelIdx=4 → meta-llama          → avgAggregate 38.05
+    // NOTE: Mistralai scored highest on evals AND had 88.5% market price —
+    // but Qwen won. Genuine incorrect prediction by belief system (not a mapping bug).
     entryMap: {
       "0": "Qwen/Qwen3-8B",
       "1": "mistralai/ministral-3-8b-instruct-2512",
@@ -149,11 +157,119 @@ const MARKET_CONFIG = {
   },
 };
 
-// Oldest → newest display order
+// Oldest → newest display order (known settled markets)
 const MARKET_ORDER = ["0", "1", "3", "4"];
 
-// Most recent closed market (used for main dashboard)
-const LATEST_MARKET_ID = "4";
+// ─── Dynamic live market detection ───────────────────────────────────────────
+// No more hardcoded current market ID.
+// Server checks Delphi API for any ongoing market automatically.
+// Falls back to latest known settled market (ID "4") if nothing is live.
+
+let liveMarketCache = null;
+let liveMarketCacheTime = 0;
+const LIVE_MARKET_CACHE_MS = 60000; // re-check Delphi API every 60s
+
+// Ghost IDs — market IDs that appear as "ongoing" in the Delphi API
+// but have no real eval/chart data and should never be treated as live.
+// Only ID "2" is a confirmed ghost (stale entry Gensyn never cleaned up).
+// IDs 0,1,3,4 are real settled markets and handled via the fallback path.
+const GHOST_MARKET_IDS = new Set(["2"]);
+
+// Validate a market actually has real eval data (not a ghost)
+async function marketHasRealData(marketId) {
+  // Quick check: probe modelIdx=0, need at least 1 eval returned
+  const r = await fetchJson(
+    `https://delphi.gensyn.ai/api/markets/${marketId}/evals?modelIdx=0`
+  ).catch(() => ({ ok: false, json: null }));
+  const evals = r?.json?.evals;
+  return Array.isArray(evals) && evals.length > 0;
+}
+
+async function detectLiveMarket() {
+  const now = Date.now();
+  if (liveMarketCache && now - liveMarketCacheTime < LIVE_MARKET_CACHE_MS) {
+    return liveMarketCache;
+  }
+
+  try {
+    const r = await fetchJson("https://delphi.gensyn.ai/api/markets?limit=10&status=ongoing");
+    const items = r?.json?.items || [];
+
+    // Step 1: filter out known ghost IDs
+    const candidates = items
+      .filter(m => !GHOST_MARKET_IDS.has(String(m.market_id)))
+      .sort((a, b) => (b.created_ts || 0) - (a.created_ts || 0)); // newest first
+
+    // Step 2: validate each candidate actually has real eval data
+    for (const candidate of candidates) {
+      const marketId = String(candidate.market_id);
+      const hasData = await marketHasRealData(marketId);
+
+      if (!hasData) {
+        console.log(`[live-market] Skipping market ID ${marketId} "${candidate.market_name}" — no real eval data (ghost)`);
+        // Auto-add to ghost set so future checks skip it instantly
+        GHOST_MARKET_IDS.add(marketId);
+        continue;
+      }
+
+      // Valid live market found
+      if (MARKET_CONFIG[marketId]) {
+        liveMarketCache = {
+          market_id: marketId,
+          market_name: MARKET_CONFIG[marketId].name,
+          status: "ongoing",
+          entryMap: MARKET_CONFIG[marketId].entryMap,
+          isKnown: true,
+        };
+      } else {
+        console.log(`[live-market] New market detected: ID ${marketId} "${candidate.market_name}" — discovering models...`);
+        const entryMap = await discoverEntryMap(marketId);
+        liveMarketCache = {
+          market_id: marketId,
+          market_name: candidate.market_name || `Market #${marketId}`,
+          status: "ongoing",
+          entryMap,
+          isKnown: false,
+        };
+      }
+
+      liveMarketCacheTime = now;
+      console.log(`[live-market] ✅ Active market → ID=${marketId} "${liveMarketCache.market_name}"`);
+      return liveMarketCache;
+    }
+  } catch (e) {
+    console.error("[live-market] Check failed:", e.message);
+  }
+
+  // Nothing live (or all candidates were ghosts) — fall back to latest settled market
+  liveMarketCache = {
+    market_id: "4",
+    market_name: MARKET_CONFIG["4"].name,
+    status: "closed",
+    entryMap: MARKET_CONFIG["4"].entryMap,
+    isKnown: true,
+  };
+  liveMarketCacheTime = Date.now();
+  console.log(`[live-market] No active market found — showing latest settled (ID 4)`);
+  return liveMarketCache;
+}
+
+// Probe modelIdx 0-9 to discover models in an unknown new market
+async function discoverEntryMap(marketId) {
+  const probes = await Promise.all(
+    Array.from({ length: 10 }, (_, i) =>
+      fetchJson(`https://delphi.gensyn.ai/api/markets/${marketId}/evals?modelIdx=${i}`)
+        .then(r => ({ idx: i, ok: r.ok && r.json && Array.isArray(r.json.evals) && r.json.evals.length > 0 }))
+        .catch(() => ({ idx: i, ok: false }))
+    )
+  );
+  const entryMap = {};
+  for (const p of probes) {
+    if (p.ok) entryMap[String(p.idx)] = `Entry #${p.idx}`;
+  }
+  console.log(`[discoverEntryMap] Market ${marketId}: found ${Object.keys(entryMap).length} models`);
+  return entryMap;
+}
 
 // ─── Chart winner helper ──────────────────────────────────────────────────────
 function pickWinnerFromChart(chartJson, entryMap) {
@@ -431,30 +547,42 @@ app.get("/api/historical-analysis", async (req, res) => {
 });
 
 // ─── Entry map ────────────────────────────────────────────────────────────────
-app.get("/api/entry-map", (req, res) => {
-  const marketId = String(req.query.market_id || LATEST_MARKET_ID);
-  const config = MARKET_CONFIG[marketId] || MARKET_CONFIG[LATEST_MARKET_ID];
-  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-  res.setHeader("Pragma", "no-cache");
-  res.setHeader("Expires", "0");
-  res.json({
-    market_id: marketId,
-    entry_count: Object.keys(config.entryMap).length,
-    fetched_at: new Date().toISOString(),
-    map: config.entryMap,
-    map_source: "confirmed_config",
-  });
+app.get("/api/entry-map", async (req, res) => {
+  try {
+    const live = await detectLiveMarket();
+    const marketId = req.query.market_id ? String(req.query.market_id) : live.market_id;
+    const config = MARKET_CONFIG[marketId];
+    const entryMap = config?.entryMap || (marketId === live.market_id ? live.entryMap : {});
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.json({
+      market_id: marketId,
+      entry_count: Object.keys(entryMap).length,
+      fetched_at: new Date().toISOString(),
+      map: entryMap,
+      map_source: config ? "confirmed_config" : "dynamic_discovery",
+    });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
 });
 
 // ─── Delphi chart ─────────────────────────────────────────────────────────────
 app.get("/api/delphi-chart", async (req, res) => {
   try {
     const timeframe = String(req.query.timeframe || "auto");
-    const marketId  = String(req.query.market_id || LATEST_MARKET_ID);
-    const config    = MARKET_CONFIG[marketId] || MARKET_CONFIG[LATEST_MARKET_ID];
-    const entryMap  = config.entryMap;
+    const live = await detectLiveMarket();
+    const marketId = req.query.market_id ? String(req.query.market_id) : live.market_id;
+    const config = MARKET_CONFIG[marketId];
+    const entryMap = config?.entryMap || (marketId === live.market_id ? live.entryMap : {});
 
     const now = Date.now();
+    // Invalidate cache if market changed
+    if (delphiChartCache && delphiChartCache.market_id !== marketId) {
+      delphiChartCache = null;
+      delphiChartCacheTime = 0;
+    }
     if (delphiChartCache && now - delphiChartCacheTime < CACHE_DURATION_MS) return res.json(delphiChartCache);
 
     const url = `https://delphi.gensyn.ai/api/markets/${marketId}/chart?timeframe=${encodeURIComponent(timeframe)}`;
@@ -498,24 +626,30 @@ app.get("/api/delphi-chart", async (req, res) => {
 // ─── Human belief ─────────────────────────────────────────────────────────────
 app.get("/api/human-belief", async (req, res) => {
   try {
-    const now = Date.now();
-    if (humanBeliefCache && now - humanBeliefCacheTime < HUMAN_BELIEF_CACHE_MS) return res.json(humanBeliefCache);
-
-    const config     = MARKET_CONFIG[LATEST_MARKET_ID];
-    const entryMap   = config.entryMap;
+    const live = await detectLiveMarket();
+    const marketId   = live.market_id;
+    const entryMap   = live.entryMap;
     const modelCount = Object.keys(entryMap).length;
 
+    const now = Date.now();
+    // Invalidate cache if the market has changed
+    if (humanBeliefCache && humanBeliefCache.market_id !== marketId) {
+      humanBeliefCache = null;
+      humanBeliefCacheTime = 0;
+    }
+    if (humanBeliefCache && now - humanBeliefCacheTime < HUMAN_BELIEF_CACHE_MS) return res.json(humanBeliefCache);
+
     const evalTasks = Array.from({ length: modelCount }, (_, i) =>
-      fetchJsonWithTimeout(`https://delphi.gensyn.ai/api/markets/${LATEST_MARKET_ID}/evals?modelIdx=${i}`)
+      fetchJsonWithTimeout(`https://delphi.gensyn.ai/api/markets/${marketId}/evals?modelIdx=${i}`)
     );
     const settled    = await Promise.allSettled(evalTasks);
     const raw        = settled.map((s) => (s.status === "fulfilled" ? s.value.json : null));
     const modelNames = Array.from({ length: modelCount }, (_, i) => entryMap[String(i)] || `Entry #${i}`);
 
     const payload = {
-      market_id:   LATEST_MARKET_ID,
-      market_name: config.name,
-      status:      "closed",
+      market_id:   marketId,
+      market_name: live.market_name,
+      status:      live.status,
       fetched_at:  new Date().toISOString(),
       model_names: modelNames,
       raw,
@@ -528,6 +662,28 @@ app.get("/api/human-belief", async (req, res) => {
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
     res.json(payload);
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+// ─── Live market endpoint (auto-detects current market) ──────────────────────
+// The frontend calls this first on load to know which market to display.
+// Returns ongoing market if one exists, otherwise latest settled market.
+app.get("/api/live-market", async (req, res) => {
+  try {
+    const live = await detectLiveMarket();
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.json({
+      market_id: live.market_id,
+      market_name: live.market_name,
+      status: live.status,
+      is_live: live.status === "ongoing",
+      entry_map: live.entryMap,
+      entry_count: Object.keys(live.entryMap).length,
+      is_known_market: live.isKnown,
+      fetched_at: new Date().toISOString(),
+    });
   } catch (e) {
     res.status(500).json({ error: String(e) });
   }
